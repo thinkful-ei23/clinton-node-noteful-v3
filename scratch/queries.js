@@ -8,27 +8,30 @@ const { MONGODB_URI } = require('../config');
 const Note = require('../models/note');
 
 // Find/Search for notes using `Note.find`
-// mongoose.connect(MONGODB_URI)
-//   .then(() => {
-//     const searchTerm = 'Lady Gaga';
-//     let filter = {};
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    const searchTerm = 'government';
+    let filter = {};
 
-//     if (searchTerm) {
-//       filter.title = { $regex: searchTerm, $options: 'i' };
-//     }
+    if (searchTerm) {
+      const searchArray = [];
+      searchArray.push({"title": {$regex: searchTerm, $options: 'i' }});
+      searchArray.push({"content": {$regex: searchTerm, $options: 'i' }});
+      filter = {$or: searchArray};
+    }
 
-//     return Note.find(filter).sort({ updatedAt: 'desc' });
-//   })
-//   .then(results => {
-//     console.log(results);
-//   })
-//   .then(() => {
-//     return mongoose.disconnect();
-//   })
-//   .catch(err => {
-//     console.error(`ERROR: ${err.message}`);
-//     console.error(err);
-//   });
+    return Note.find(filter).sort({ updatedAt: 'desc' });
+  })
+  .then(results => {
+    console.log(results);
+  })
+  .then(() => {
+    return mongoose.disconnect();
+  })
+  .catch(err => {
+    console.error(`ERROR: ${err.message}`);
+    console.error(err);
+  });
 
 // Find note by id using `Note.findById`
 // mongoose.connect(MONGODB_URI)
@@ -89,19 +92,19 @@ const Note = require('../models/note');
 //   });
 
 // Delete a note by id using `Note.findByIdAndRemove`
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    const id = "5b732c145c5aca0e7a615bb8";
+// mongoose.connect(MONGODB_URI)
+//   .then(() => {
+//     const id = "5b732c145c5aca0e7a615bb8";
 
-    return Note.findByIdAndRemove(id);
-  })
-  .then(() => {
-    console.log('Note deleted');
-  })
-  .then(() => {
-    return mongoose.disconnect();
-  })
-  .catch(err => {
-    console.error(`ERROR: ${err.message}`);
-    console.error(err);
-  });
+//     return Note.findByIdAndRemove(id);
+//   })
+//   .then(() => {
+//     console.log('Note deleted');
+//   })
+//   .then(() => {
+//     return mongoose.disconnect();
+//   })
+//   .catch(err => {
+//     console.error(`ERROR: ${err.message}`);
+//     console.error(err);
+//   });

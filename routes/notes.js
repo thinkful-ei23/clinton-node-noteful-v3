@@ -47,10 +47,32 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
+  const { title, content } = req.body;
 
-  console.log('Create a Note');
-  res.location('path/to/new/document').status(201).json({ id: 2, title: 'Temp 2' });
+  /***** Never trust users - validate input *****/
+  if (!title) {
+    const err = new Error('Missing `title` in request body');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
 
+  const newNote = {
+    title: title,
+    content: content
+  };
+
+  Note
+    .create(newNote)
+    .then(result => {
+      if (result) {
+        res.location(`http://${req.originalUrl}/${result.id}`)
+          .status(201)
+          .json(result);
+      } else {
+        next();
+      }
+    })
+    .catch(err => next(err));
 });
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */

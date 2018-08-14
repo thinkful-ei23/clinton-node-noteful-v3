@@ -77,17 +77,42 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
+  const noteId = req.params.id;
+  const { title, content } = req.body;
 
-  console.log('Update a Note');
-  res.json({ id: 1, title: 'Updated Temp 1' });
+  /***** Never trust users - validate input *****/
+  if (!title) {
+    const err = new Error('Missing `title` in request body');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
 
+  const updateObj = {
+    title: title,
+    content: content
+  };
+
+  Note
+    .findByIdAndUpdate(noteId, {$set: updateObj}, { new: true })
+    .then(result => {
+      if (result) {
+        res.json(result); // => Client
+      } else {
+        next(); // => 404 handler
+      }
+    })
+    .catch(err => next(err)); // => Error handler
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
-
-  console.log('Delete a Note');
-  res.status(204).end();
+  Note
+    .findByIdAndRemove(req.params.id)
+    .then(() => {
+      // Respond with a 204 status
+      res.sendStatus(204); // => Client
+    })
+    .catch(err => next(err)); // => Error handler
 });
 
 module.exports = router;

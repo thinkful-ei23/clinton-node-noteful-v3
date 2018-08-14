@@ -1,12 +1,12 @@
 'use strict';
 
 const express = require('express');
-
-const router = express.Router();
-
 const Note = require('../models/note');
 
-/* ========== GET/READ ALL ITEMS ========== */
+// Create a router instance (aka "mini-app")
+const router = express.Router();
+
+/* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
   let filter = {};
@@ -23,29 +23,29 @@ router.get('/', (req, res, next) => {
     .sort({ updatedAt: 'desc' })
     .then(results => {
       if (results) {
-        res.json(results);
+        res.json(results); // => Client
       } else {
-        next();
+        next(); // => 404 handler
       }
     })
-    .catch(err => next(err));
+    .catch(err => next(err)); // => Error handler
 });
 
-/* ========== GET/READ A SINGLE ITEM ========== */
+/* ========== GET/READ A SINGLE NOTE ========== */
 router.get('/:id', (req, res, next) => {
   Note
     .findById(req.params.id)
     .then(result => {
       if (result) {
-        res.json(result);
+        res.json(result); // => Client
       } else {
-        next();
+        next(); // => 404 handler
       }
     })
-    .catch(err => next(err));
+    .catch(err => next(err)); // => Error handler
 });
 
-/* ========== POST/CREATE AN ITEM ========== */
+/* ========== POST/CREATE A NOTE ========== */
 router.post('/', (req, res, next) => {
   const { title, content } = req.body;
 
@@ -67,15 +67,15 @@ router.post('/', (req, res, next) => {
       if (result) {
         res.location(`http://${req.originalUrl}/${result.id}`)
           .status(201)
-          .json(result);
+          .json(result); // => Client
       } else {
-        next();
+        next(); // => 404 handler
       }
     })
-    .catch(err => next(err));
+    .catch(err => next(err)); // => Error handler
 });
 
-/* ========== PUT/UPDATE A SINGLE ITEM ========== */
+/* ========== PUT/UPDATE A SINGLE NOTE ========== */
 router.put('/:id', (req, res, next) => {
   const noteId = req.params.id;
   const { title, content } = req.body;
@@ -104,7 +104,7 @@ router.put('/:id', (req, res, next) => {
     .catch(err => next(err)); // => Error handler
 });
 
-/* ========== DELETE/REMOVE A SINGLE ITEM ========== */
+/* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
   Note
     .findByIdAndRemove(req.params.id)

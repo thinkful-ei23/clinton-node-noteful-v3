@@ -1,5 +1,6 @@
 'use strict';
 
+// Load Express, Morgan, Mongoose, Config, and Routers into the file
 const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
@@ -11,7 +12,7 @@ const notesRouter = require('./routes/notes');
 // Create an Express application
 const app = express();
 
-// Log all requests. Skip logging during
+// Log all requests. Skip logging during testing.
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'common', {
   skip: () => process.env.NODE_ENV === 'test'
 }));
@@ -19,10 +20,12 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'common', {
 // Create a static webserver
 app.use(express.static('public'));
 
-// Parse request body
+// Parse incoming requests that contain JSON and
+// make them available on `req.body`
 app.use(express.json());
 
-// Mount routers
+// Route all requests to `/api/notes` 
+// through the proper Router
 app.use('/api/notes', notesRouter);
 
 // Custom 404 Not Found route handler
@@ -32,7 +35,7 @@ app.use((req, res, next) => {
   next(err);
 });
 
-// Custom Error Handler
+// Custom 'Catch-All' Error Handler
 app.use((err, req, res, next) => {
   if (err.status) {
     const errBody = Object.assign({}, err, { message: err.message });
@@ -43,7 +46,7 @@ app.use((err, req, res, next) => {
   }
 });
 
-// Connect to DB and Listen for incoming connections
+// Connect to the Mongo database
 mongoose.connect(MONGODB_URI)
   .then(instance => {
     const conn = instance.connections[0];

@@ -2,8 +2,11 @@
 
 const mongoose = require('mongoose');
 
+// This is our schema to represent a note
 const noteSchema = new mongoose.Schema({
+  // The `title` property is a String type and required
   title: { type: String, required: true },
+  // The `content` property is a String type
   content: String
 });
 

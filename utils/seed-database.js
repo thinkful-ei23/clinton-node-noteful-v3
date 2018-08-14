@@ -1,3 +1,5 @@
+// node ./utils/seed-database.js
+
 'use strict';
 
 const mongoose = require('mongoose');

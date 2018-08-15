@@ -1,3 +1,10 @@
 language: node_js
 node_js: node
 services: mongodb
+deploy:
+  provider: heroku
+  api_key:
+    secure: TqabsECV+LTFHE/w4ikEoOWIRV3A4fcjmW5W4VUCy+i65yeWjDkMCM9M3zTMbUn0qlWRXNsDMIUypISndTOyGHzJbwupj0LkdfqCMw5McSV0j8I6hoN3eQuh37MIkftJq8M9vfkcdauOdoJXZgGDip6FPvQIqu7Q/CB8232n4R6waASXcF6m+6WDlGzhsKTgYwia8Bx9W70+J7h+uVAnHFQhVBZJ8MSYBZlc9hv6KY8kpVWLXihi3a95Bac/EpJG4UHVAmjonEdG9nQ6ftAbC0ynXmOXmlYzebydNw6y6OPphlddYrfGppsuWaUUR4CLHyxD7YlCndtMhQumD07xTGHgpg21yFHI4yv6/iavb8qkDmAhSr2EagOq3U0U6wBJuFIv3kfzALY9+8qQLJxTD+mvzvODjyscV6CHm62X34BuNDfLMXCo7MbI9kJYeQ5nEW/KX5r8uwI92w94rAMOZaIV+8D0di2kDrigSO46HPwoAAS8RcCnngCUm/yCkTyM4+l0lzB3Bh3TMPbKvjV5W6qAL4fsYrASKZTdUsraLDchgByNo1TNh4LgUuF4WGkARqHOxEHkLTqEUYB+XUSwu6hRZH7XHC7hPyOZrv90yftlqzt7jCNDcgZx2ffei7jP7A/Zh1ydxuOIkrdkbuSAxfXiqTGLhvN0x8DFinXsMKo=
+  app: clint-node-noteful-v3
+  on:
+    repo: thinkful-ei23/clinton-node-noteful-v3

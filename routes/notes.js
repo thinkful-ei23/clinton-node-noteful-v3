@@ -16,6 +16,16 @@ router.get('/', (req, res, next) => {
     searchArray.push({'title': {$regex: searchTerm, $options: 'i' }});
     searchArray.push({'content': {$regex: searchTerm, $options: 'i' }});
     filter = {$or: searchArray};
+    // V2:
+    // const re = new RegExp(searchTerm, 'i');
+    // filter = {$or: [{'title': re}, {'content': re}]}
+
+    // V3:
+    // const re = new RegExp(searchTerm, 'i');
+    // filter.$or = [{'title': re}, {'content': re}];
+
+    // V4 (replaces `Note.find(filter)` below):
+    // Note.find().or(searchArray)
   }
 
   Note

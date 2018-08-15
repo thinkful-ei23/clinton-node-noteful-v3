@@ -46,6 +46,7 @@ app.use((err, req, res, next) => {
   }
 });
 
+// Could instead do the module method...
 if (process.env.NODE_ENV !== 'test') {
   
   // Connect to the Mongo database

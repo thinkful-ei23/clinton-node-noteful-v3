@@ -7,7 +7,8 @@ const noteSchema = new mongoose.Schema({
   // The `title` property is a String type and required
   title: { type: String, required: true },
   // The `content` property is a String type
-  content: String
+  content: String,
+  folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder' }
 });
 
 // Add `createdAt` and `updatedAt` fields

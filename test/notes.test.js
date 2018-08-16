@@ -8,13 +8,15 @@ const app = require('../server');
 const { TEST_MONGODB_URI } = require('../config');
 
 const Note = require('../models/note');
+const Folder = require('../models/folder');
 
 const seedNotes = require('../db/seed/notes');
+const seedFolders = require('../db/seed/folders');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
 
-describe('Noteful API resource', function() {
+describe('Noteful /api/notes resource', function() {
 
   before(function () {
     return mongoose.connect(TEST_MONGODB_URI)
@@ -22,7 +24,11 @@ describe('Noteful API resource', function() {
   });
 
   beforeEach(function () {
-    return Note.insertMany(seedNotes);
+    return Promise.all([
+      Note.insertMany(seedNotes),
+      Folder.insertMany(seedFolders),
+      Folder.createIndexes()
+    ]);
   });
 
   afterEach(function () {
@@ -63,7 +69,7 @@ describe('Noteful API resource', function() {
 
           res.body.forEach(function(note) {
             expect(note).to.be.an('object');
-            expect(note).to.include.keys('id', 'title', 'content', 'createdAt', 'updatedAt');
+            expect(note).to.include.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId');
           });
           resNote = res.body[0];
           return Note.findById(resNote.id);
@@ -74,6 +80,7 @@ describe('Noteful API resource', function() {
           expect(resNote.content).to.equal(note.content);
           expect(new Date(resNote.createdAt)).to.eql(note.createdAt);
           expect(new Date(resNote.updatedAt)).to.eql(note.updatedAt);
+          expect(resNote.folderId).to.equal(note.folderId + '');
         });
     });
 
@@ -93,13 +100,14 @@ describe('Noteful API resource', function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'title', 'folderId', 'content', 'createdAt', 'updatedAt');
 
           expect(res.body.id).to.equal(resNote.id);
           expect(res.body.title).to.equal(resNote.title);
           expect(res.body.content).to.equal(resNote.content);
           expect(new Date(res.body.createdAt)).to.eql(resNote.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(resNote.updatedAt);
+          expect(res.body.folderId).to.equal(resNote.folderId + '');
         });
     });
 
@@ -110,7 +118,8 @@ describe('Noteful API resource', function() {
     it('should create and return a new note when provided valid data', function() {
       const newItem = {
         'title': 'The best article about dogs ever!',
-        'content': 'Lorem ipsum dolor...'
+        'content': 'Lorem ipsum dolor...',
+        'folderId': '111111111111111111111100'
       };
 
       let res;
@@ -124,7 +133,7 @@ describe('Noteful API resource', function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
 
           return Note.findById(res.body.id);
         })
@@ -134,6 +143,7 @@ describe('Noteful API resource', function() {
           expect(res.body.content).to.equal(data.content);
           expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+          expect(res.body.folderId).to.equal(data.folderId + '');
         });
     });
 
@@ -143,8 +153,9 @@ describe('Noteful API resource', function() {
 
     it('should update the note when provided valid data', function() {
       const updateData = {
-        title: 'Updated Title',
-        content: 'Updated content lorem ipsum...'
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100'
       };
 
       return Note
@@ -161,13 +172,14 @@ describe('Noteful API resource', function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'title', 'content', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
 
           return Note.findById(updateData.id);
         })
         .then(function(note) {
           expect(note.title).to.equal(updateData.title);
           expect(note.content).to.equal(updateData.content);
+          expect(note.folderId + '').to.equal(updateData.folderId);
         });
 
     });

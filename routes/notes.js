@@ -2,6 +2,7 @@
 
 const express = require('express');
 const Note = require('../models/note');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();
@@ -9,23 +10,24 @@ const router = express.Router();
 /* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
+  const folderId = req.query.folderId;
   let filter = {};
 
   if (searchTerm) {
-    const searchArray = [];
-    searchArray.push({'title': {$regex: searchTerm, $options: 'i' }});
-    searchArray.push({'content': {$regex: searchTerm, $options: 'i' }});
-    filter = {$or: searchArray};
     // V2:
     // const re = new RegExp(searchTerm, 'i');
-    // filter = {$or: [{'title': re}, {'content': re}]}
+    // filter = {$or: [{'title': re}, {'content': re}]};
 
     // V3:
-    // const re = new RegExp(searchTerm, 'i');
-    // filter.$or = [{'title': re}, {'content': re}];
+    const re = new RegExp(searchTerm, 'i');
+    filter.$or = [{'title': re}, {'content': re}];
 
     // V4 (replaces `Note.find(filter)` below):
     // Note.find().or(searchArray)
+  }
+
+  if (folderId) {
+    filter.folderId = folderId;
   }
 
   Note
@@ -57,7 +59,7 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE A NOTE ========== */
 router.post('/', (req, res, next) => {
-  const { title, content } = req.body;
+  const { title, content, folderId } = req.body;
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -66,9 +68,16 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
+  if (folderId && !ObjectId.isValid(folderId)) {
+    const err = new Error('`folderId` is not a valid Mongo ObjectId');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
   const newNote = {
     title: title,
-    content: content
+    content: content,
+    folderId: folderId
   };
 
   Note
@@ -88,7 +97,7 @@ router.post('/', (req, res, next) => {
 /* ========== PUT/UPDATE A SINGLE NOTE ========== */
 router.put('/:id', (req, res, next) => {
   const noteId = req.params.id;
-  const { title, content } = req.body;
+  const { title, content, folderId } = req.body;
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -97,9 +106,16 @@ router.put('/:id', (req, res, next) => {
     return next(err); // => Error handler
   }
 
+  if (folderId && !ObjectId.isValid(folderId)) {
+    const err = new Error('`folderId` is not a valid Mongo ObjectId');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
   const updateObj = {
     title: title,
-    content: content
+    content: content,
+    folderId: folderId
   };
 
   Note

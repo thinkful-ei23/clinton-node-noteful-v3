@@ -41,4 +41,4 @@ router.get('/:id', (req, res, next) => {
     .catch(err => next(err)); // => Error handler
 });
 
-
+module.exports = router;

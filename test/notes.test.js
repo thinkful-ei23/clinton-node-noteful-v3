@@ -211,56 +211,57 @@ describe('Noteful /api/notes resource', function() {
 
   });
 
-//   describe('GET /api/notes/:id', function() {
+  describe('GET /api/notes/:id', function() {
 
-//     it('should return the correct note', function() {
-//       let resNote;
-//       return Note.findOne()
-//         .then(function(res) {
-//           resNote = res;
-//           return chai.request(app).get(`/api/notes/${resNote.id}`);
-//         })
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
+    it('should return the correct note', function() {
+      let resNote;
+      return Note.findOne()
+        .populate('tags', 'name')
+        .then(function(res) {
+          resNote = res;
+          return chai.request(app).get(`/api/notes/${resNote.id}`);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
 
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.have.keys('id', 'title', 'folderId', 'content', 'createdAt', 'updatedAt');
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.keys('id', 'title', 'folderId', 'content', 'createdAt', 'updatedAt', 'tags');
 
-//           expect(res.body.id).to.equal(resNote.id);
-//           expect(res.body.title).to.equal(resNote.title);
-//           expect(res.body.content).to.equal(resNote.content);
-//           expect(new Date(res.body.createdAt)).to.eql(resNote.createdAt);
-//           expect(new Date(res.body.updatedAt)).to.eql(resNote.updatedAt);
-//           expect(res.body.folderId).to.equal(resNote.folderId + '');
-//         });
-//     });
+          expect(res.body.id).to.equal(resNote.id);
+          expect(res.body.title).to.equal(resNote.title);
+          expect(res.body.content).to.equal(resNote.content);
+          expect(new Date(res.body.createdAt)).to.eql(resNote.createdAt);
+          expect(new Date(res.body.updatedAt)).to.eql(resNote.updatedAt);
+          expect(res.body.folderId).to.equal(resNote.folderId + '');
+        });
+    });
 
-//     it('should return a 400 error when given an invalid id', function() {
-//       return chai.request(app)
-//         .get('/api/notes/NOTANID')
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Invalid id');
-//         });
-//     });
+    it('should return a 400 error when given an invalid id', function() {
+      return chai.request(app)
+        .get('/api/notes/NOTANID')
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
 
-//     it('should return a 404 error when given a nonexistent id', function() {
-//       return chai.request(app)
-//         .get('/api/notes/000000000000000000000099')
-//         .then(function(res) {
-//           expect(res).to.have.status(404);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Not Found');
-//         });
-//     });
+    it('should return a 404 error when given a nonexistent id', function() {
+      return chai.request(app)
+        .get('/api/notes/000000000000000000000099')
+        .then(function(res) {
+          expect(res).to.have.status(404);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Not Found');
+        });
+    });
 
-//   });
+  });
 
 //   describe('POST /api/notes', function() {
 
@@ -336,7 +337,7 @@ describe('Noteful /api/notes resource', function() {
 //         });
 //     });
 
-//   });
+  // });
 
 //   describe('PUT /api/notes/:id', function() {
 

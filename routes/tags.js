@@ -2,7 +2,7 @@
 
 const express = require('express');
 const Tag = require('../models/tag');
-// const Note = require('../models/note');
+const Note = require('../models/note');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 // Create a router instance (aka "mini-app")
@@ -108,6 +108,27 @@ router.put('/:id', (req, res, next) => {
       }
       next(err); // => Error handler
     });
+});
+
+/* ========== DELETE/REMOVE A SINGLE TAG ========== */
+router.delete('/:id', (req, res, next) => {
+  const tagId = req.params.id;
+
+  if (!ObjectId.isValid(tagId)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+  
+  Note.updateMany({'tags': tagId}, {$pull: {'tags': tagId}})
+    .then(() => {
+      return Tag.findByIdAndRemove(tagId);
+    })
+    .then(() => {
+      // Respond with a 204 status
+      res.sendStatus(204); // => Client
+    })
+    .catch(err => next(err)); // => Error handler
 });
 
 module.exports = router;

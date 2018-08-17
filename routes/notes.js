@@ -9,7 +9,7 @@ const router = express.Router();
 
 /* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {
-  const { searchTerm, folderId } = req.query;
+  const { searchTerm, folderId, tagId } = req.query;
   let filter = {};
 
   if (searchTerm) {
@@ -29,7 +29,12 @@ router.get('/', (req, res, next) => {
     filter.folderId = folderId;
   }
 
+  if (tagId) {
+    filter.tags = tagId;
+  }
+
   Note.find(filter)
+    .populate('tags')
     .sort({ updatedAt: 'desc' })
     .then(results => {
       if (results) {
@@ -50,6 +55,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Note.findById(req.params.id)
+    .populate('tags')
     .then(result => {
       if (result) {
         res.json(result); // => Client

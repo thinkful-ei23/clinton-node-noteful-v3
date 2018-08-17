@@ -41,4 +41,36 @@ router.get('/:id', (req, res, next) => {
     .catch(err => next(err)); // => Error handler
 });
 
+/* ========== POST/CREATE A TAG ========== */
+router.post('/', (req, res, next) => {
+  const { name } = req.body;
+
+  /***** Never trust users - validate input *****/
+  if (!name) {
+    const err = new Error('Missing `name` in request body');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  const newTag = { name };
+
+  Tag.create(newTag)
+    .then(result => {
+      if (result) {
+        res.location(`http://${req.originalUrl}/${result.id}`)
+          .status(201)
+          .json(result); // => Client
+      } else {
+        next(); // => 404 handler
+      }
+    })
+    .catch(err => {
+      if (err.code === 11000) {
+        err = new Error('The tag name already exists');
+        err.status = 400;
+      }
+      next(err); // => Error handler
+    });
+});
+
 module.exports = router;

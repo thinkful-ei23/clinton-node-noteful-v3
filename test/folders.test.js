@@ -70,11 +70,11 @@ describe('Noteful /api/folders resource', function() {
           resFolder = res.body[0];
           return Folder.findById(resFolder.id);
         })
-        .then(function(note) {
-          expect(resFolder.id).to.equal(note.id);
-          expect(resFolder.name).to.equal(note.name);
-          expect(new Date(resFolder.createdAt)).to.eql(note.createdAt);
-          expect(new Date(resFolder.updatedAt)).to.eql(note.updatedAt);
+        .then(function(folder) {
+          expect(resFolder.id).to.equal(folder.id);
+          expect(resFolder.name).to.equal(folder.name);
+          expect(new Date(resFolder.createdAt)).to.eql(folder.createdAt);
+          expect(new Date(resFolder.updatedAt)).to.eql(folder.updatedAt);
         });
     });
 

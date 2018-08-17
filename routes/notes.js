@@ -34,7 +34,7 @@ router.get('/', (req, res, next) => {
   }
 
   Note.find(filter)
-    .populate('tags')
+    .populate('tags', 'name')
     .sort({ updatedAt: 'desc' })
     .then(results => {
       if (results) {
@@ -55,7 +55,7 @@ router.get('/:id', (req, res, next) => {
   }
 
   Note.findById(req.params.id)
-    .populate('tags')
+    .populate('tags', 'name')
     .then(result => {
       if (result) {
         res.json(result); // => Client

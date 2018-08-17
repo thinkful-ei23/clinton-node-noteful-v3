@@ -127,4 +127,65 @@ describe('Noteful /api/tags resource', function() {
 
   });
 
+  describe('POST /api/tags', function() {
+
+    it('should create and return a new tag when provided valid data', function() {
+      const newTag = {
+        'name': 'Stuff'
+      };
+
+      let res;
+      return chai.request(app)
+        .post('/api/tags')
+        .send(newTag)
+        .then(function(_res) {
+          res = _res;
+          expect(res).to.have.status(201);
+          expect(res).to.have.header('location');
+          expect(res).to.be.json;
+
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
+
+          return Tag.findById(res.body.id);
+        })
+        .then(function(data) {
+          expect(res.body.id).to.equal(data.id);
+          expect(res.body.name).to.equal(data.name);
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
+          expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+        });
+    });
+
+    it('should return a 400 error when missing a `name`', function() {
+      const newTag = { name: '' };
+
+      return chai.request(app)
+        .post('/api/tags')
+        .send(newTag)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `name` in request body');
+        });
+    });
+
+    it('should return a 400 error when given a duplicate name', function () {
+      return Tag.findOne()
+        .then(data => {
+          const newItem = { 'name': data.name };
+          return chai.request(app).post('/api/tags').send(newItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
+
+  });
+
 });

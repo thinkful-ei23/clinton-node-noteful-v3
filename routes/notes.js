@@ -97,7 +97,7 @@ router.post('/', (req, res, next) => {
     title,
     content,
     folderId: (folderId) ? folderId : null,
-    tags: (tags) ? tags : null
+    tags: (tags) ? tags : []
   };
 
   Note.create(newNote)

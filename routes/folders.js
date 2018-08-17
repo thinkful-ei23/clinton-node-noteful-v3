@@ -2,6 +2,7 @@
 
 const express = require('express');
 const Folder = require('../models/folder');
+const Notes = require('../models/note');
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();
@@ -106,8 +107,12 @@ router.put('/:id', (req, res, next) => {
 
 /* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
-  Folder
-    .findByIdAndRemove(req.params.id)
+  const folderId = req.params.id;
+  Notes
+    .updateMany({'folderId': folderId}, {$unset: {'folderId': 1}})
+    .then(() => {
+      return Folder.findByIdAndRemove(folderId);
+    })
     .then(() => {
       // Respond with a 204 status
       res.sendStatus(204); // => Client

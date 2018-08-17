@@ -2,16 +2,16 @@
 
 const express = require('express');
 const Folder = require('../models/folder');
-const Notes = require('../models/note');
+const Note = require('../models/note');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();
 
-/* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
+/* ========== GET/READ ALL FOLDERS ========== */
 router.get('/', (req, res, next) => {
-  Folder
-    .find()
-    .sort({ name: 'asc' })
+  Folder.find()
+    .sort('name')
     .then(results => {
       if (results) {
         res.json(results); // => Client
@@ -22,10 +22,15 @@ router.get('/', (req, res, next) => {
     .catch(err => next(err)); // => Error handler
 });
 
-/* ========== GET/READ A SINGLE NOTE ========== */
+/* ========== GET/READ A SINGLE FOLDER ========== */
 router.get('/:id', (req, res, next) => {
-  Folder
-    .findById(req.params.id)
+  if (!ObjectId.isValid(req.params.id)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+  
+  Folder.findById(req.params.id)
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -36,7 +41,7 @@ router.get('/:id', (req, res, next) => {
     .catch(err => next(err)); // => Error handler
 });
 
-/* ========== POST/CREATE A NOTE ========== */
+/* ========== POST/CREATE A FOLDER ========== */
 router.post('/', (req, res, next) => {
   const { name } = req.body;
 
@@ -47,12 +52,9 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  const newFolder = {
-    name: name
-  };
+  const newFolder = { name };
 
-  Folder
-    .create(newFolder)
+  Folder.create(newFolder)
     .then(result => {
       if (result) {
         res.location(`http://${req.originalUrl}/${result.id}`)
@@ -71,24 +73,27 @@ router.post('/', (req, res, next) => {
     });
 });
 
-/* ========== PUT/UPDATE A SINGLE NOTE ========== */
+/* ========== PUT/UPDATE A SINGLE FOLDER ========== */
 router.put('/:id', (req, res, next) => {
   const folderId = req.params.id;
   const { name } = req.body;
 
   /***** Never trust users - validate input *****/
-  if (!name) {
-    const err = new Error('Missing `title` in request body');
+  if (!ObjectId.isValid(folderId)) {
+    const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
 
-  const updateObj = {
-    name: name
-  };
+  if (!name) {
+    const err = new Error('Missing `name` in request body');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
 
-  Folder
-    .findByIdAndUpdate(folderId, {$set: updateObj}, { new: true })
+  const updateObj = { name };
+
+  Folder.findByIdAndUpdate(folderId, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -108,8 +113,14 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
   const folderId = req.params.id;
-  Notes
-    .updateMany({'folderId': folderId}, {$unset: {'folderId': 1}})
+
+  if (!ObjectId.isValid(folderId)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+  
+  Note.updateMany({'folderId': folderId}, {$unset: {'folderId': 1}})
     .then(() => {
       return Folder.findByIdAndRemove(folderId);
     })

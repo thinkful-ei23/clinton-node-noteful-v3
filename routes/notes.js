@@ -9,8 +9,7 @@ const router = express.Router();
 
 /* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {
-  const searchTerm = req.query.searchTerm;
-  const folderId = req.query.folderId;
+  const { searchTerm, folderId } = req.query;
   let filter = {};
 
   if (searchTerm) {
@@ -30,8 +29,7 @@ router.get('/', (req, res, next) => {
     filter.folderId = folderId;
   }
 
-  Note
-    .find(filter)
+  Note.find(filter)
     .sort({ updatedAt: 'desc' })
     .then(results => {
       if (results) {
@@ -45,8 +43,13 @@ router.get('/', (req, res, next) => {
 
 /* ========== GET/READ A SINGLE NOTE ========== */
 router.get('/:id', (req, res, next) => {
-  Note
-    .findById(req.params.id)
+  if (!ObjectId.isValid(req.params.id)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  Note.findById(req.params.id)
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -75,13 +78,12 @@ router.post('/', (req, res, next) => {
   }
 
   const newNote = {
-    title: title,
-    content: content,
-    folderId: folderId
+    title,
+    content,
+    folderId: (folderId) ? folderId : null
   };
 
-  Note
-    .create(newNote)
+  Note.create(newNote)
     .then(result => {
       if (result) {
         res.location(`http://${req.originalUrl}/${result.id}`)
@@ -100,6 +102,12 @@ router.put('/:id', (req, res, next) => {
   const { title, content, folderId } = req.body;
 
   /***** Never trust users - validate input *****/
+  if (!ObjectId.isValid(noteId)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
   if (!title) {
     const err = new Error('Missing `title` in request body');
     err.status = 400;
@@ -113,13 +121,12 @@ router.put('/:id', (req, res, next) => {
   }
 
   const updateObj = {
-    title: title,
-    content: content,
-    folderId: folderId
+    title,
+    content,
+    folderId: (folderId) ? folderId : null
   };
 
-  Note
-    .findByIdAndUpdate(noteId, {$set: updateObj}, { new: true })
+  Note.findByIdAndUpdate(noteId, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -132,8 +139,13 @@ router.put('/:id', (req, res, next) => {
 
 /* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
-  Note
-    .findByIdAndRemove(req.params.id)
+  if (!ObjectId.isValid(req.params.id)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  Note.findByIdAndRemove(req.params.id)
     .then(() => {
       // Respond with a 204 status
       res.sendStatus(204); // => Client

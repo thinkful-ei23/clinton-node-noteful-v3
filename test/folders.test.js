@@ -8,7 +8,6 @@ const app = require('../server');
 const { TEST_MONGODB_URI } = require('../config');
 
 const Folder = require('../models/folder');
-
 const seedFolders = require('../db/seed/folders');
 
 const expect = chai.expect;
@@ -22,7 +21,10 @@ describe('Noteful /api/folders resource', function() {
   });
 
   beforeEach(function () {
-    return Folder.insertMany(seedFolders);
+    return Promise.all([
+      Folder.insertMany(seedFolders),
+      Folder.createIndexes()
+    ]);
   });
 
   afterEach(function () {
@@ -101,6 +103,30 @@ describe('Noteful /api/folders resource', function() {
         });
     });
 
+    it('should return a 400 error when given an invalid id', function() {
+      return chai.request(app)
+        .get('/api/folders/NOTANID')
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 404 error when given a nonexistent id', function() {
+      return chai.request(app)
+        .get('/api/folders/000000000000000000000099')
+        .then(function(res) {
+          expect(res).to.have.status(404);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
   });
 
   describe('POST /api/folders', function() {
@@ -133,14 +159,41 @@ describe('Noteful /api/folders resource', function() {
         });
     });
 
+    it('should return a 400 error when missing a `name`', function() {
+      const newFolder = { name: '' };
+
+      return chai.request(app)
+        .post('/api/folders')
+        .send(newFolder)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `name` in request body');
+        });
+    });
+
+    it('should return a 400 error when given a duplicate name', function () {
+      return Folder.findOne()
+        .then(data => {
+          const newItem = { 'name': data.name };
+          return chai.request(app).post('/api/folders').send(newItem);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('The folder name already exists');
+        });
+    });
+
   });
 
   describe('PUT /api/folders/:id', function() {
 
     it('should update the folder when provided valid data', function() {
-      const updateData = {
-        name: 'Updated Name'
-      };
+      const updateData = { name: 'Updated Name' };
 
       return Folder
         .findOne()
@@ -166,6 +219,73 @@ describe('Noteful /api/folders resource', function() {
 
     });
 
+    it('should return a 400 error when missing a `name`', function() {
+      const updateData = { name: '' };
+
+      return Folder
+        .findOne()
+        .then(function(folder) {
+          updateData.id = folder.id;
+          return chai.request(app)
+            .put(`/api/folders/${folder.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `name` in request body');
+        });
+    });
+
+    it('should return a 400 error when given a duplicate name', function () {
+      return Folder.find().limit(2)
+        .then(results => {
+          const [item1, item2] = results;
+          item1.name = item2.name;
+          return chai.request(app)
+            .put(`/api/folders/${item1.id}`)
+            .send(item1);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The folder name already exists');
+        });
+    });
+
+    it('should return a 400 error when given an invalid id', function() {
+      const updateData = { name: 'Updated Name' };
+
+      return chai.request(app)
+        .put('/api/folders/NOTANID')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 404 error when given a nonexistent id', function() {
+      const updateData = { name: 'Updated Name' };
+      
+      return chai.request(app)
+        .put('/api/folders/111111111111111111111199')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(404);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
   });
 
   describe('DELETE /api/folders/:id', function() {
@@ -185,6 +305,18 @@ describe('Noteful /api/folders resource', function() {
         })
         .then(function(_folder) {
           expect(_folder).to.be.null;
+        });
+    });
+
+    it('should return a 400 error when given an invalid id', function() {
+      return chai.request(app)
+        .delete('/api/folders/NOTANID')
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
         });
     });
 

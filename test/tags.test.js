@@ -188,4 +188,102 @@ describe('Noteful /api/tags resource', function() {
 
   });
 
+  describe('PUT /api/tags/:id', function() {
+
+    it('should update the tag when provided valid data', function() {
+      const updateData = { name: 'Updates' };
+
+      return Tag
+        .findOne()
+        .then(function(tag) {
+          updateData.id = tag.id;
+
+          return chai.request(app)
+            .put(`/api/tags/${tag.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
+
+          return Tag.findById(updateData.id);
+        })
+        .then(function(tag) {
+          expect(tag.name).to.equal(updateData.name);
+        });
+
+    });
+
+    it('should return a 400 error when missing a `name`', function() {
+      const updateData = { name: '' };
+
+      return Tag
+        .findOne()
+        .then(function(tag) {
+          updateData.id = tag.id;
+          return chai.request(app)
+            .put(`/api/tags/${tag.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `name` in request body');
+        });
+    });
+
+    it('should return a 400 error when given a duplicate name', function () {
+      return Tag.find().limit(2)
+        .then(results => {
+          const [item1, item2] = results;
+          item1.name = item2.name;
+          return chai.request(app)
+            .put(`/api/tags/${item1.id}`)
+            .send(item1);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
+
+    it('should return a 400 error when given an invalid id', function() {
+      const updateData = { name: 'Updates' };
+
+      return chai.request(app)
+        .put('/api/tags/NOTANID')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 404 error when given a nonexistent id', function() {
+      const updateData = { name: 'Updates' };
+      
+      return chai.request(app)
+        .put('/api/tags/222222222222222222222299')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(404);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
+  });
+
 });

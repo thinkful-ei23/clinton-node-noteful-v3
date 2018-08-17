@@ -68,7 +68,7 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE A NOTE ========== */
 router.post('/', (req, res, next) => {
-  const { title, content, folderId } = req.body;
+  const { title, content, folderId, tags } = req.body;
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -83,10 +83,21 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
+  if (tags) {
+    tags.forEach(tag => {
+      if (!ObjectId.isValid(tag)) {
+        const err = new Error('`tagId` is not a valid Mongo ObjectId');
+        err.status = 400;
+        return next(err); // => Error handler
+      }
+    });
+  }
+
   const newNote = {
     title,
     content,
-    folderId: (folderId) ? folderId : null
+    folderId: (folderId) ? folderId : null,
+    tags: (tags) ? tags : null
   };
 
   Note.create(newNote)

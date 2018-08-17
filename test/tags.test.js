@@ -286,4 +286,38 @@ describe('Noteful /api/tags resource', function() {
 
   });
 
+  describe('DELETE /api/tags/:id', function() {
+
+    it('should delete a tag by id', function() {
+      let tag;
+
+      return Tag
+        .findOne()
+        .then(function(_tag) {
+          tag = _tag;
+          return chai.request(app).delete(`/api/tags/${tag.id}`);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(204);
+          return Tag.findById(tag.id);
+        })
+        .then(function(_tag) {
+          expect(_tag).to.be.null;
+        });
+    });
+
+    it('should return a 400 error when given an invalid id', function() {
+      return chai.request(app)
+        .delete('/api/tags/NOTANID')
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+  });
+
 });

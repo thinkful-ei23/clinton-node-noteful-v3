@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const Tag = require('../models/folder');
+const Tag = require('../models/tag');
 // const Note = require('../models/note');
 const ObjectId = require('mongoose').Types.ObjectId;
 

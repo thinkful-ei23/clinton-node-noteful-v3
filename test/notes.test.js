@@ -1,191 +1,215 @@
-// 'use strict';
+'use strict';
 
-// const chai = require('chai');
-// const chaiHttp = require('chai-http');
-// const mongoose = require('mongoose');
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const mongoose = require('mongoose');
 
-// const app = require('../server');
-// const { TEST_MONGODB_URI } = require('../config');
+const app = require('../server');
+const { TEST_MONGODB_URI } = require('../config');
 
-// const Note = require('../models/note');
-// const Folder = require('../models/folder');
+const Note = require('../models/note');
+const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 
-// const seedNotes = require('../db/seed/notes');
-// const seedFolders = require('../db/seed/folders');
+const seedNotes = require('../db/seed/notes');
+const seedFolders = require('../db/seed/folders');
+const seedTags = require('../db/seed/tags');
 
-// const expect = chai.expect;
-// chai.use(chaiHttp);
+const expect = chai.expect;
+chai.use(chaiHttp);
 
-// describe('Noteful /api/notes resource', function() {
+describe('Noteful /api/notes resource', function() {
 
-//   before(function () {
-//     return mongoose.connect(TEST_MONGODB_URI)
-//       .then(() => mongoose.connection.db.dropDatabase());
-//   });
+  before(function () {
+    return mongoose.connect(TEST_MONGODB_URI)
+      .then(() => mongoose.connection.db.dropDatabase());
+  });
 
-//   beforeEach(function () {
-//     return Promise.all([
-//       Note.insertMany(seedNotes),
-//       Folder.insertMany(seedFolders),
-//       Folder.createIndexes()
-//     ]);
-//   });
+  beforeEach(function () {
+    return Promise.all([
+      Note.insertMany(seedNotes),
+      Folder.insertMany(seedFolders),
+      Tag.insertMany(seedTags),
+      Folder.createIndexes(),
+      Tag.createIndexes()
+    ]);
+  });
 
-//   afterEach(function () {
-//     return mongoose.connection.db.dropDatabase();
-//   });
+  afterEach(function () {
+    return mongoose.connection.db.dropDatabase();
+  });
 
-//   after(function () {
-//     return mongoose.disconnect();
-//   });
+  after(function () {
+    return mongoose.disconnect();
+  });
 
-//   describe('GET /api/notes', function() {
+  describe('GET /api/notes', function() {
 
-//     it('should return all existing notes', function() {
-//       let res;
-//       return chai.request(app)
-//         .get('/api/notes')
-//         .then(function(_res) {
-//           res = _res;
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.have.lengthOf.at.least(1);
-//           return Note.countDocuments();
-//         })
-//         .then(function(count) {
-//           expect(res.body).to.have.lengthOf(count);
-//         });
-//     });
+    it('should return all existing notes', function() {
+      let res;
+      return chai.request(app)
+        .get('/api/notes')
+        .then(function(_res) {
+          res = _res;
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.have.lengthOf.at.least(1);
+          return Note.countDocuments();
+        })
+        .then(function(count) {
+          expect(res.body).to.have.lengthOf(count);
+        });
+    });
 
-//     it('should return notes with right fields', function() {
-//       let resNote;
-//       return chai.request(app)
-//         .get('/api/notes')
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('array');
-//           expect(res.body).to.have.lengthOf.at.least(1);
+    it('should return notes with right fields', function() {
+      let resNote;
+      return chai.request(app)
+        .get('/api/notes')
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body).to.have.lengthOf.at.least(1);
 
-//           res.body.forEach(function(note) {
-//             expect(note).to.be.an('object');
-//             expect(note).to.include.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId');
-//           });
-//           resNote = res.body[0];
-//           return Note.findById(resNote.id);
-//         })
-//         .then(function(note) {
-//           expect(resNote.id).to.equal(note.id);
-//           expect(resNote.title).to.equal(note.title);
-//           expect(resNote.content).to.equal(note.content);
-//           expect(new Date(resNote.createdAt)).to.eql(note.createdAt);
-//           expect(new Date(resNote.updatedAt)).to.eql(note.updatedAt);
-//           expect(resNote.folderId).to.equal(note.folderId + '');
-//         });
-//     });
+          res.body.forEach(function(note) {
+            expect(note).to.be.an('object');
+            expect(note).to.include.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId', 'tags');
+          });
+          resNote = res.body[0];
+          return Note.findById(resNote.id).populate('tags', 'name');
+        })
+        .then(function(note) {
+          expect(resNote.id).to.equal(note.id);
+          expect(resNote.title).to.equal(note.title);
+          expect(resNote.content).to.equal(note.content);
+          expect(new Date(resNote.createdAt)).to.eql(note.createdAt);
+          expect(new Date(resNote.updatedAt)).to.eql(note.updatedAt);
+          expect(resNote.folderId).to.equal(note.folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(note.tags[i].name);
+            expect(resNote.tags[i].id).to.equal(note.tags[i].id);
+          }
+        });
+    });
 
-//     it('should return correct search results for a valid query', function() {
-//       const searchTerm = 'government';
-//       let resNote;
-//       return chai.request(app)
-//         .get(`/api/notes/?searchTerm=${searchTerm}`)
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('array');
-//           expect(res.body.length).to.be.above(0);
-//           res.body.forEach(function(note) {
-//             expect(note).to.be.a('object');
-//             expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
-//             expect(note.title).to.include(searchTerm);
-//           });
-//           resNote = res.body[0];
-//           const re = new RegExp(searchTerm, 'i');
-//           return Note.find({$or: [{'title': re}, {'content': re}]});
-//         })
-//         .then(function(notes) {
-//           expect(resNote.id).to.equal(notes[0].id);
-//           expect(resNote.title).to.equal(notes[0].title);
-//           expect(resNote.content).to.equal(notes[0].content);
-//           expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
-//           expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
-//           expect(resNote.folderId).to.equal(notes[0].folderId + '');
-//         });
-//     });
+    it('should return correct search results for a valid query', function() {
+      const searchTerm = 'government';
+      let resNote;
+      return chai.request(app)
+        .get(`/api/notes/?searchTerm=${searchTerm}`)
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.be.above(0);
+          res.body.forEach(function(note) {
+            expect(note).to.be.a('object');
+            expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+            expect(note.title).to.include(searchTerm);
+          });
+          resNote = res.body[0];
+          const re = new RegExp(searchTerm, 'i');
+          return Note.find({$or: [{'title': re}, {'content': re}]}).populate('tags', 'name');
+        })
+        .then(function(notes) {
+          expect(resNote.id).to.equal(notes[0].id);
+          expect(resNote.title).to.equal(notes[0].title);
+          expect(resNote.content).to.equal(notes[0].content);
+          expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
+          expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
+          expect(resNote.folderId).to.equal(notes[0].folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(notes[0].tags[i].name);
+            expect(resNote.tags[i].id).to.equal(notes[0].tags[i].id);
+          }
+        });
+    });
 
-//     it('should return correct results for a valid folderId', function() {
-//       const folderId = '111111111111111111111101';
-//       let resNote;
-//       return chai.request(app)
-//         .get(`/api/notes/?folderId=${folderId}`)
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('array');
-//           expect(res.body.length).to.be.above(0);
-//           res.body.forEach(function(note) {
-//             expect(note).to.be.a('object');
-//             expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
-//             expect(note.folderId).to.equal(folderId);
-//           });
-//           resNote = res.body[0];
-//           return Note.find({'folderId': folderId});
-//         })
-//         .then(function(notes) {
-//           expect(resNote.id).to.equal(notes[0].id);
-//           expect(resNote.title).to.equal(notes[0].title);
-//           expect(resNote.content).to.equal(notes[0].content);
-//           expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
-//           expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
-//           expect(resNote.folderId).to.equal(notes[0].folderId + '');
-//         });
-//     });
+    it('should return correct results for a valid folderId', function() {
+      const folderId = '111111111111111111111101';
+      let resNote;
+      return chai.request(app)
+        .get(`/api/notes/?folderId=${folderId}`)
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.be.above(0);
+          res.body.forEach(function(note) {
+            expect(note).to.be.a('object');
+            expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+            expect(note.folderId).to.equal(folderId);
+          });
+          resNote = res.body[0];
+          return Note.find({'folderId': folderId}).populate('tags', 'name');
+        })
+        .then(function(notes) {
+          expect(resNote.id).to.equal(notes[0].id);
+          expect(resNote.title).to.equal(notes[0].title);
+          expect(resNote.content).to.equal(notes[0].content);
+          expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
+          expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
+          expect(resNote.folderId).to.equal(notes[0].folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(notes[0].tags[i].name);
+            expect(resNote.tags[i].id).to.equal(notes[0].tags[i].id);
+          }
+        });
+    });
 
-//     it('should return correct results for a valid query and folderId', function() {
-//       const searchTerm = 'gaga';
-//       const folderId = '111111111111111111111101';
-//       let resNote;
-//       return chai.request(app)
-//         .get(`/api/notes/?folderId=${folderId}&searchTerm=${searchTerm}`)
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('array');
-//           expect(res.body.length).to.be.above(0);
-//           res.body.forEach(function(note) {
-//             expect(note).to.be.a('object');
-//             expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
-//             expect(note.title.toLowerCase()).to.include(searchTerm.toLowerCase());
-//             expect(note.folderId).to.equal(folderId);
-//           });
-//           resNote = res.body[0];
-//           const re = new RegExp(searchTerm, 'i');
-//           return Note.find({$or: [{'title': re}, {'content': re}], 'folderId': folderId});
-//         })
-//         .then(function(notes) {
-//           expect(resNote.id).to.equal(notes[0].id);
-//           expect(resNote.title).to.equal(notes[0].title);
-//           expect(resNote.content).to.equal(notes[0].content);
-//           expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
-//           expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
-//           expect(resNote.folderId).to.equal(notes[0].folderId + '');
-//         });
-//     });
+    it('should return correct results for a valid query and folderId', function() {
+      const searchTerm = 'gaga';
+      const folderId = '111111111111111111111101';
+      let resNote;
+      return chai.request(app)
+        .get(`/api/notes/?folderId=${folderId}&searchTerm=${searchTerm}`)
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.be.above(0);
+          res.body.forEach(function(note) {
+            expect(note).to.be.a('object');
+            expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+            expect(note.title.toLowerCase()).to.include(searchTerm.toLowerCase());
+            expect(note.folderId).to.equal(folderId);
+          });
+          resNote = res.body[0];
+          const re = new RegExp(searchTerm, 'i');
+          return Note.find({$or: [{'title': re}, {'content': re}], 'folderId': folderId}).populate('tags', 'name');
+        })
+        .then(function(notes) {
+          expect(resNote.id).to.equal(notes[0].id);
+          expect(resNote.title).to.equal(notes[0].title);
+          expect(resNote.content).to.equal(notes[0].content);
+          expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
+          expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
+          expect(resNote.folderId).to.equal(notes[0].folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(notes[0].tags[i].name);
+            expect(resNote.tags[i].id).to.equal(notes[0].tags[i].id);
+          }
+        });
+    });
 
-//     it('should return an empty array for an invalid query', function() {
-//       const searchTerm = 'dogs';
-//       const folderId = '111111111111111111111105';
-//       return chai.request(app)
-//         .get(`/api/notes/?folderId=${folderId}&searchTerm=${searchTerm}`)
-//         .then(function(res) {
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('array');
-//           expect(res.body.length).to.equal(0);
-//         });
-//     });
+    it('should return an empty array for an invalid query', function() {
+      const searchTerm = 'dogs';
+      const folderId = '111111111111111111111105';
+      return chai.request(app)
+        .get(`/api/notes/?folderId=${folderId}&searchTerm=${searchTerm}`)
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.equal(0);
+        });
+    });
 
-//   });
+  });
 
 //   describe('GET /api/notes/:id', function() {
 
@@ -481,4 +505,4 @@
 
 //   });
 
-// });
+});

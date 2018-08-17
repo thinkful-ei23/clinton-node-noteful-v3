@@ -73,4 +73,41 @@ router.post('/', (req, res, next) => {
     });
 });
 
+/* ========== PUT/UPDATE A SINGLE TAG ========== */
+router.put('/:id', (req, res, next) => {
+  const tagId = req.params.id;
+  const { name } = req.body;
+
+  /***** Never trust users - validate input *****/
+  if (!ObjectId.isValid(tagId)) {
+    const err = new Error('Invalid id');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  if (!name) {
+    const err = new Error('Missing `name` in request body');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  const updateObj = { name };
+
+  Tag.findByIdAndUpdate(tagId, {$set: updateObj}, { new: true })
+    .then(result => {
+      if (result) {
+        res.json(result); // => Client
+      } else {
+        next(); // => 404 handler
+      }
+    })
+    .catch(err => {
+      if (err.code === 11000) {
+        err = new Error('The tag name already exists');
+        err.status = 400;
+      }
+      next(err); // => Error handler
+    });
+});
+
 module.exports = router;

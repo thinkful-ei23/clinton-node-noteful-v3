@@ -76,7 +76,9 @@ describe('Noteful /api/notes resource', function() {
             expect(note).to.include.keys('id', 'title', 'content', 'createdAt', 'updatedAt', 'folderId', 'tags');
           });
           resNote = res.body[0];
-          return Note.findById(resNote.id).populate('tags', 'name');
+          return Note.findById(resNote.id)
+            .populate('tags', 'name')
+            .sort({ updatedAt: 'desc' });
         })
         .then(function(note) {
           expect(resNote.id).to.equal(note.id);
@@ -110,7 +112,9 @@ describe('Noteful /api/notes resource', function() {
           });
           resNote = res.body[0];
           const re = new RegExp(searchTerm, 'i');
-          return Note.find({$or: [{'title': re}, {'content': re}]}).populate('tags', 'name');
+          return Note.find({$or: [{'title': re}, {'content': re}]})
+            .populate('tags', 'name')
+            .sort({ updatedAt: 'desc' });
         })
         .then(function(notes) {
           expect(resNote.id).to.equal(notes[0].id);
@@ -143,7 +147,43 @@ describe('Noteful /api/notes resource', function() {
             expect(note.folderId).to.equal(folderId);
           });
           resNote = res.body[0];
-          return Note.find({'folderId': folderId}).populate('tags', 'name');
+          return Note.find({'folderId': folderId})
+            .populate('tags', 'name')
+            .sort({ updatedAt: 'desc' });
+        })
+        .then(function(notes) {
+          expect(resNote.id).to.equal(notes[0].id);
+          expect(resNote.title).to.equal(notes[0].title);
+          expect(resNote.content).to.equal(notes[0].content);
+          expect(new Date(resNote.createdAt)).to.eql(notes[0].createdAt);
+          expect(new Date(resNote.updatedAt)).to.eql(notes[0].updatedAt);
+          expect(resNote.folderId).to.equal(notes[0].folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(notes[0].tags[i].name);
+            expect(resNote.tags[i].id).to.equal(notes[0].tags[i].id);
+          }
+        });
+    });
+
+    it('should return correct results for a valid tagId', function() {
+      const tagId = '222222222222222222222201';
+      let resNote;
+      return chai.request(app)
+        .get(`/api/notes/?tagId=${tagId}`)
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.be.above(0);
+          res.body.forEach(function(note) {
+            expect(note).to.be.a('object');
+            expect(note).to.have.all.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+          });
+          resNote = res.body[0];
+          return Note.find({'tags': tagId})
+            .populate('tags', 'name')
+            .sort({ updatedAt: 'desc' });
         })
         .then(function(notes) {
           expect(resNote.id).to.equal(notes[0].id);
@@ -179,7 +219,9 @@ describe('Noteful /api/notes resource', function() {
           });
           resNote = res.body[0];
           const re = new RegExp(searchTerm, 'i');
-          return Note.find({$or: [{'title': re}, {'content': re}], 'folderId': folderId}).populate('tags', 'name');
+          return Note.find({$or: [{'title': re}, {'content': re}], 'folderId': folderId})
+            .populate('tags', 'name')
+            .sort({ updatedAt: 'desc' });
         })
         .then(function(notes) {
           expect(resNote.id).to.equal(notes[0].id);
@@ -234,6 +276,11 @@ describe('Noteful /api/notes resource', function() {
           expect(new Date(res.body.createdAt)).to.eql(resNote.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(resNote.updatedAt);
           expect(res.body.folderId).to.equal(resNote.folderId + '');
+          expect(resNote.tags).to.be.an('array');
+          for (let i = 0; i < resNote.tags.length; i++) {
+            expect(resNote.tags[i].name).to.equal(resNote.tags[i].name);
+            expect(resNote.tags[i].id).to.equal(resNote.tags[i].id);
+          }
         });
     });
 
@@ -263,247 +310,261 @@ describe('Noteful /api/notes resource', function() {
 
   });
 
-//   describe('POST /api/notes', function() {
+  describe('POST /api/notes', function() {
 
-//     it('should create and return a new note when provided valid data', function() {
-//       const newItem = {
-//         'title': 'The best article about dogs ever!',
-//         'content': 'Lorem ipsum dolor...',
-//         'folderId': '111111111111111111111100'
-//       };
+    it('should create and return a new note when provided valid data', function() {
+      const newItem = {
+        'title': 'The best article about dogs ever!',
+        'content': 'Lorem ipsum dolor...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
 
-//       let res;
-//       return chai.request(app)
-//         .post('/api/notes')
-//         .send(newItem)
-//         .then(function(_res) {
-//           res = _res;
-//           expect(res).to.have.status(201);
-//           expect(res).to.be.json;
-//           expect(res).to.have.header('location');
-//           expect(res.headers.location).to.include(res.body.id);
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
-//           expect(res.body).to.deep.equal(
-//             Object.assign(newItem, ({
-//               id: res.body.id,
-//               createdAt: res.body.createdAt,
-//               updatedAt: res.body.updatedAt
-//             }))
-//           );
-//           return Note.findById(res.body.id);
-//         })
-//         .then(function(data) {
-//           expect(res.body.id).to.equal(data.id);
-//           expect(res.body.title).to.equal(data.title);
-//           expect(res.body.content).to.equal(data.content);
-//           expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
-//           expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
-//           expect(res.body.folderId).to.equal(data.folderId + '');
-//         });
-//     });
+      let res;
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newItem)
+        .then(function(_res) {
+          res = _res;
+          expect(res).to.have.status(201);
+          expect(res).to.be.json;
+          expect(res).to.have.header('location');
+          expect(res.headers.location).to.include(res.body.id);
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+          expect(res.body).to.deep.equal(
+            Object.assign(newItem, ({
+              id: res.body.id,
+              createdAt: res.body.createdAt,
+              updatedAt: res.body.updatedAt
+            }))
+          );
+          return Note.findById(res.body.id);
+        })
+        .then(function(data) {
+          expect(res.body.id).to.equal(data.id);
+          expect(res.body.title).to.equal(data.title);
+          expect(res.body.content).to.equal(data.content);
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
+          expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+          expect(res.body.folderId).to.equal(data.folderId + '');
+          expect(res.body.tags).to.be.an('array');
+          for (let i = 0; i < res.body.tags.length; i++) {
+            expect(res.body.tags[i]).to.equal(data.tags[i] + '');
+          }
+        });
+    });
 
-//     it('should return a 400 error when missing a `title`', function() {
-//       const newNote = { title: '', content: 'Uh-oh! No title!' };
+    it('should return a 400 error when missing a `title`', function() {
+      const newNote = { title: '', content: 'Uh-oh! No title!' };
 
-//       return chai.request(app)
-//         .post('/api/notes')
-//         .send(newNote)
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Missing `title` in request body');
-//         });
-//     });
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newNote)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+    });
 
-//     it('should return a 400 error when given an invalid folderId', function() {
-//       const newNote = {
-//         'title': 'Updated Title',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': 'NOTANID'
-//       };
+    it('should return a 400 error when given an invalid folderId', function() {
+      const newNote = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': 'NOTANID'
+      };
 
-//       return chai.request(app)
-//         .post('/api/notes')
-//         .send(newNote)
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
-//         });
-//     });
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newNote)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
+        });
+    });
 
-  // });
+  });
 
-//   describe('PUT /api/notes/:id', function() {
+  describe('PUT /api/notes/:id', function() {
 
-//     it('should update and return the note when provided valid data', function() {
-//       const updateData = {
-//         'title': 'Updated Title',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': '111111111111111111111100'
-//       };
-//       let res;
+    it('should update and return the note when provided valid data', function() {
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
+      let res;
 
-//       return Note
-//         .findOne()
-//         .then(function(note) {
-//           updateData.id = note.id;
-//           return chai.request(app)
-//             .put(`/api/notes/${note.id}`)
-//             .send(updateData);
-//         })
-//         .then(function(_res) {
-//           res = _res;
-//           expect(res).to.have.status(200);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt');
-//           expect(res.body).to.deep.equal(
-//             Object.assign(updateData, ({
-//               id: res.body.id,
-//               createdAt: res.body.createdAt,
-//               updatedAt: res.body.updatedAt
-//             }))
-//           );
+      return Note
+        .findOne()
+        .then(function(note) {
+          updateData.id = note.id;
+          return chai.request(app)
+            .put(`/api/notes/${note.id}`)
+            .send(updateData);
+        })
+        .then(function(_res) {
+          res = _res;
+          expect(res).to.have.status(200);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.have.keys('id', 'title', 'content', 'folderId', 'createdAt', 'updatedAt', 'tags');
+          expect(res.body).to.deep.equal(
+            Object.assign(updateData, ({
+              id: res.body.id,
+              createdAt: res.body.createdAt,
+              updatedAt: res.body.updatedAt
+            }))
+          );
 
-//           return Note.findById(updateData.id);
-//         })
-//         .then(function(data) {
-//           expect(res.body.id).to.equal(data.id);
-//           expect(res.body.title).to.equal(data.title);
-//           expect(res.body.content).to.equal(data.content);
-//           expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
-//           expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
-//           expect(res.body.folderId).to.equal(data.folderId + '');
-//         });
+          return Note.findById(updateData.id);
+        })
+        .then(function(data) {
+          expect(res.body.id).to.equal(data.id);
+          expect(res.body.title).to.equal(data.title);
+          expect(res.body.content).to.equal(data.content);
+          expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
+          expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+          expect(res.body.folderId).to.equal(data.folderId + '');
+          expect(res.body.tags).to.be.an('array');
+          for (let i = 0; i < res.body.tags.length; i++) {
+            expect(res.body.tags[i]).to.equal(data.tags[i] + '');
+          }
+        });
 
-//     });
+    });
 
-//     it('should return a 400 error when missing a `title`', function() {
-//       const updateData = {
-//         'title': '',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': '111111111111111111111100'
-//       };
+    it('should return a 400 error when missing a `title`', function() {
+      const updateData = {
+        'title': '',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
 
-//       return Note
-//         .findOne()
-//         .then(function(note) {
-//           updateData.id = note.id;
-//           return chai.request(app)
-//             .put(`/api/notes/${note.id}`)
-//             .send(updateData);
-//         })
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Missing `title` in request body');
-//         });
-//     });
+      return Note
+        .findOne()
+        .then(function(note) {
+          updateData.id = note.id;
+          return chai.request(app)
+            .put(`/api/notes/${note.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Missing `title` in request body');
+        });
+    });
 
-//     it('should return a 400 error when given an invalid folderId', function() {
-//       const updateData = {
-//         'title': 'Updated Title',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': 'NOTANID'
-//       };
+    it('should return a 400 error when given an invalid folderId', function() {
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': 'NOTANID',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
 
-//       return Note
-//         .findOne()
-//         .then(function(note) {
-//           updateData.id = note.id;
-//           return chai.request(app)
-//             .put(`/api/notes/${note.id}`)
-//             .send(updateData);
-//         })
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
-//         });
-//     });
+      return Note
+        .findOne()
+        .then(function(note) {
+          updateData.id = note.id;
+          return chai.request(app)
+            .put(`/api/notes/${note.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
+        });
+    });
 
-//     it('should return a 400 error when given an invalid id', function() {
-//       const updateData = {
-//         'title': 'Updated Title',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': '111111111111111111111100'
-//       };
+    it('should return a 400 error when given an invalid id', function() {
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
 
-//       return chai.request(app)
-//         .put('/api/notes/NOTANID')
-//         .send(updateData)
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Invalid id');
-//         });
-//     });
+      return chai.request(app)
+        .put('/api/notes/NOTANID')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
 
-//     it('should return a 404 error when given a nonexistent id', function() {
-//       const updateData = {
-//         'title': 'Updated Title',
-//         'content': 'Updated content lorem ipsum...',
-//         'folderId': '111111111111111111111100'
-//       };
+    it('should return a 404 error when given a nonexistent id', function() {
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', '222222222222222222222203']
+      };
       
-//       return chai.request(app)
-//         .put('/api/notes/000000000000000000000099')
-//         .send(updateData)
-//         .then(function(res) {
-//           expect(res).to.have.status(404);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Not Found');
-//         });
-//     });
+      return chai.request(app)
+        .put('/api/notes/000000000000000000000099')
+        .send(updateData)
+        .then(function(res) {
+          expect(res).to.have.status(404);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Not Found');
+        });
+    });
 
-//   });
+  });
 
-//   describe('DELETE /api/notes/:id', function() {
+  describe('DELETE /api/notes/:id', function() {
 
-//     it('should delete a note by id', function() {
-//       let note;
+    it('should delete a note by id', function() {
+      let note;
 
-//       return Note
-//         .findOne()
-//         .then(function(_note) {
-//           note = _note;
-//           return chai.request(app).delete(`/api/notes/${note.id}`);
-//         })
-//         .then(function(res) {
-//           expect(res).to.have.status(204);
-//           return Note.findById(note.id);
-//         })
-//         .then(function(_note) {
-//           expect(_note).to.be.null;
-//         });
-//     });
+      return Note
+        .findOne()
+        .then(function(_note) {
+          note = _note;
+          return chai.request(app).delete(`/api/notes/${note.id}`);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(204);
+          return Note.findById(note.id);
+        })
+        .then(function(_note) {
+          expect(_note).to.be.null;
+        });
+    });
 
-//     it('should return a 400 error when given an invalid id', function() {
-//       return chai.request(app)
-//         .delete('/api/notes/NOTANID')
-//         .then(function(res) {
-//           expect(res).to.have.status(400);
-//           expect(res).to.be.json;
-//           expect(res.body).to.be.an('object');
-//           expect(res.body).to.include.keys('message', 'status');
-//           expect(res.body.message).to.equal('Invalid id');
-//         });
-//     });
+    it('should return a 400 error when given an invalid id', function() {
+      return chai.request(app)
+        .delete('/api/notes/NOTANID')
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('Invalid id');
+        });
+    });
 
-//   });
+  });
 
 });

@@ -389,6 +389,26 @@ describe('Noteful /api/notes resource', function() {
         });
     });
 
+    it('should return a 400 error when given an invalid tagId', function() {
+      const newNote = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', 'NOTANID']
+      };
+
+      return chai.request(app)
+        .post('/api/notes')
+        .send(newNote)
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('`tagId` is not a valid Mongo ObjectId');
+        });
+    });
+
   });
 
   describe('PUT /api/notes/:id', function() {
@@ -488,6 +508,31 @@ describe('Noteful /api/notes resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
+        });
+    });
+
+    it('should return a 400 error when given an invalid tagId', function() {
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '111111111111111111111100',
+        'tags': ['222222222222222222222201', 'NOTANID']
+      };
+
+      return Note
+        .findOne()
+        .then(function(note) {
+          updateData.id = note.id;
+          return chai.request(app)
+            .put(`/api/notes/${note.id}`)
+            .send(updateData);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body).to.include.keys('message', 'status');
+          expect(res.body.message).to.equal('`tagId` is not a valid Mongo ObjectId');
         });
     });
 

@@ -151,7 +151,7 @@ router.put('/:id', (req, res, next) => {
     title,
     content,
     folderId: (folderId) ? folderId : null,
-    tags: (tags) ? tags : null
+    tags: (tags) ? tags : []
   };
 
   Note.findByIdAndUpdate(noteId, {$set: updateObj}, { new: true })

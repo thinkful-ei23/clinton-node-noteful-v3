@@ -5,7 +5,7 @@ const User = require('../models/user');
 
 const router = express.Router();
 
-router.post('/users', (req, res) => {
+router.post('/', (req, res) => {
   let { username, password, fullname = '' } = req.body;
 
   fullname = fullname.trim();
@@ -46,4 +46,4 @@ router.post('/users', (req, res) => {
     });
 });
 
-module.exports = { router };
+module.exports = router;

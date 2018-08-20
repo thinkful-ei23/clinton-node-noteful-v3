@@ -5,7 +5,7 @@ const User = require('../models/user');
 
 const router = express.Router();
 
-router.post('/', (req, res) => {
+router.post('/', (req, res, next) => {
   let { username, password, fullname = '' } = req.body;
 
   fullname = fullname.trim();
@@ -21,13 +21,15 @@ router.post('/', (req, res) => {
           location: 'username'
         });
       }
+      return User.hashPassword(password);
     })
-    .then(() => {
-      return User.create({
+    .then(digest => {
+      const newUser = {
         username,
-        password,
+        password: digest,
         fullname
-      });
+      };
+      return User.create(newUser);
     })
     .then(user => {
       return res.status(201)
@@ -38,11 +40,11 @@ router.post('/', (req, res) => {
       if (err.reason === 'ValidationError') {
         return res.status(err.code).json(err);
       }
-      res.status(500)
-        .json({
-          code: 500,
-          message: 'Internal server error'
-        });
+      if (err.code === 11000) {
+        err = new Error('The username already exists');
+        err.status = 400;
+      }
+      next(err);
     });
 });
 

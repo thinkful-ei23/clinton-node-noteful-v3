@@ -31,6 +31,6 @@ UserSchema.methods.validatePassword = function (password) {
 
 UserSchema.statics.hashPassword = function(password) {
   return bcrypt.hash(password, 10);
-}
+};
 
 module.exports = mongoose.model('User', UserSchema);

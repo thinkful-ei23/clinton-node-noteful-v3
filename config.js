@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 module.exports = {
   // Sets value of `PORT` to either `process.env.PORT`
   // (when hosting app on production server) or `8080`

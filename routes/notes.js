@@ -1,11 +1,14 @@
 'use strict';
 
 const express = require('express');
+const passport = require('passport');
 const Note = require('../models/note');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();
+
+router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {

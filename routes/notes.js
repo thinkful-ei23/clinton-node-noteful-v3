@@ -4,6 +4,8 @@ const express = require('express');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const Note = require('../models/note');
+const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();
@@ -102,11 +104,25 @@ router.post('/', (req, res, next) => {
     title,
     content,
     userId,
-    folderId: (folderId) ? folderId : null,
-    tags: (tags) ? tags : []
+    folderId: null,
+    tags: []
   };
 
-  Note.create(newNote)
+  Folder.findOne({_id: folderId, userId})
+    .then(result => {
+      if (result) {
+        newNote.folderId = result.id;
+      }
+      return Tag.find({userId, _id: {$in: tags}});
+    })
+    .then(result => {
+      if (result) {
+        result.forEach(tag => {
+          newNote.tags.push(tag.id);
+        });
+      }
+      return Note.create(newNote);
+    })
     .then(result => {
       if (result) {
         res.location(`http://${req.originalUrl}/${result.id}`)
@@ -157,12 +173,25 @@ router.put('/:id', (req, res, next) => {
   const updateObj = {
     title,
     content,
-    userId,
-    folderId: (folderId) ? folderId : null,
-    tags: (tags) ? tags : []
+    folderId: null,
+    tags: []
   };
 
-  Note.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true })
+  Folder.findOne({_id: folderId, userId})
+    .then(result => {
+      if (result) {
+        updateObj.folderId = result.id;
+      }
+      return Tag.find({userId, _id: {$in: tags}});
+    })
+    .then(result => {
+      if (result) {
+        result.forEach(tag => {
+          updateObj.tags.push(tag.id);
+        });
+      }
+      return Note.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true });
+    })
     .then(result => {
       if (result) {
         res.json(result); // => Client

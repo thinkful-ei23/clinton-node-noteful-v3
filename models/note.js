@@ -9,7 +9,8 @@ const noteSchema = new mongoose.Schema({
   // The `content` property is a String type
   content: String,
   folderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Folder' },
-  tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }]
+  tags: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 });
 
 // Add `createdAt` and `updatedAt` fields

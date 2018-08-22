@@ -116,7 +116,7 @@ router.put('/:id', (req, res, next) => {
     });
 });
 
-/* ========== DELETE/REMOVE A SINGLE NOTE ========== */
+/* ========== DELETE/REMOVE A SINGLE FOLDER ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
   const userId = req.user.id;

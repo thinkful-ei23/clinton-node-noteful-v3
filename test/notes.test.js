@@ -385,7 +385,7 @@ describe('Noteful /api/notes resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
-          expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
+          expect(res.body.message).to.equal('`folderId` is not valid');
         });
     });
 
@@ -405,7 +405,7 @@ describe('Noteful /api/notes resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
-          expect(res.body.message).to.equal('`tagId` is not a valid Mongo ObjectId');
+          expect(res.body.message).to.equal('`tagId` is not valid');
         });
     });
 
@@ -507,7 +507,7 @@ describe('Noteful /api/notes resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
-          expect(res.body.message).to.equal('`folderId` is not a valid Mongo ObjectId');
+          expect(res.body.message).to.equal('`folderId` is not valid');
         });
     });
 
@@ -532,7 +532,7 @@ describe('Noteful /api/notes resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
-          expect(res.body.message).to.equal('`tagId` is not a valid Mongo ObjectId');
+          expect(res.body.message).to.equal('`tagId` is not valid');
         });
     });
 

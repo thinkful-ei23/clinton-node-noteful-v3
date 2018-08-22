@@ -84,22 +84,6 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  if (folderId && !ObjectId.isValid(folderId)) {
-    const err = new Error('`folderId` is not a valid Mongo ObjectId');
-    err.status = 400;
-    return next(err); // => Error handler
-  }
-
-  if (tags) {
-    tags.forEach(tag => {
-      if (!ObjectId.isValid(tag)) {
-        const err = new Error('`tagId` is not a valid Mongo ObjectId');
-        err.status = 400;
-        return next(err); // => Error handler
-      }
-    });
-  }
-
   const newNote = {
     title,
     content,
@@ -110,12 +94,31 @@ router.post('/', (req, res, next) => {
 
   Folder.findOne({_id: folderId, userId})
     .then(result => {
+      if (folderId && (!result || !ObjectId.isValid(folderId))) {
+        const err = new Error('`folderId` is not valid');
+        err.status = 400;
+        return Promise.reject(err); // => Error handler
+      }
       if (result) {
         newNote.folderId = result.id;
       }
       return Tag.find({userId, _id: {$in: tags}});
     })
     .then(result => {
+      if (result) {
+        result.forEach(tag => {
+          if (!ObjectId.isValid(tag.id)) {
+            const err = new Error('`tagId` is not valid');
+            err.status = 400;
+            return Promise.reject(err); // => Error handler
+          }
+        });
+      }
+      if (tags && result.length !== tags.length) {
+        const err = new Error('`tagId` is not valid');
+        err.status = 400;
+        return Promise.reject(err); // => Error handler
+      }
       if (result) {
         result.forEach(tag => {
           newNote.tags.push(tag.id);
@@ -154,20 +157,10 @@ router.put('/:id', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  if (folderId && !ObjectId.isValid(folderId)) {
-    const err = new Error('`folderId` is not a valid Mongo ObjectId');
+  if (!Array.isArray(tags)) {
+    const err = new Error('`tags` must be an array');
     err.status = 400;
     return next(err); // => Error handler
-  }
-
-  if (tags) {
-    tags.forEach(tag => {
-      if (!ObjectId.isValid(tag)) {
-        const err = new Error('`tagId` is not a valid Mongo ObjectId');
-        err.status = 400;
-        return next(err); // => Error handler
-      }
-    });
   }
 
   const updateObj = {
@@ -179,12 +172,31 @@ router.put('/:id', (req, res, next) => {
 
   Folder.findOne({_id: folderId, userId})
     .then(result => {
+      if (folderId && (!result || !ObjectId.isValid(folderId))) {
+        const err = new Error('`folderId` is not valid');
+        err.status = 400;
+        return Promise.reject(err); // => Error handler
+      }
       if (result) {
         updateObj.folderId = result.id;
       }
       return Tag.find({userId, _id: {$in: tags}});
     })
     .then(result => {
+      if (result) {
+        result.forEach(tag => {
+          if (!ObjectId.isValid(tag.id)) {
+            const err = new Error('`tagId` is not valid');
+            err.status = 400;
+            return Promise.reject(err); // => Error handler
+          }
+        });
+      }
+      if (tags && result.length !== tags.length) {
+        const err = new Error('`tagId` is not valid');
+        err.status = 400;
+        return Promise.reject(err); // => Error handler
+      }
       if (result) {
         result.forEach(tag => {
           updateObj.tags.push(tag.id);

@@ -11,7 +11,7 @@ const router = express.Router();
 
 /* ========== GET/READ ALL TAGS ========== */
 router.get('/', (req, res, next) => {
-  Tag.find()
+  Tag.find({userId: req.user.id})
     .sort('name')
     .then(results => {
       if (results) {
@@ -25,13 +25,16 @@ router.get('/', (req, res, next) => {
 
 /* ========== GET/READ A SINGLE TAG ========== */
 router.get('/:id', (req, res, next) => {
-  if (!ObjectId.isValid(req.params.id)) {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
   
-  Tag.findById(req.params.id)
+  Tag.findOne({ _id: id, userId })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -45,6 +48,7 @@ router.get('/:id', (req, res, next) => {
 /* ========== POST/CREATE A TAG ========== */
 router.post('/', (req, res, next) => {
   const { name } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -53,7 +57,7 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  const newTag = { name };
+  const newTag = { name, userId };
 
   Tag.create(newTag)
     .then(result => {
@@ -76,11 +80,12 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE TAG ========== */
 router.put('/:id', (req, res, next) => {
-  const tagId = req.params.id;
+  const { id } = req.params;
   const { name } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
-  if (!ObjectId.isValid(tagId)) {
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
@@ -94,7 +99,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateObj = { name };
 
-  Tag.findByIdAndUpdate(tagId, {$set: updateObj}, { new: true })
+  Tag.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -113,17 +118,18 @@ router.put('/:id', (req, res, next) => {
 
 /* ========== DELETE/REMOVE A SINGLE TAG ========== */
 router.delete('/:id', (req, res, next) => {
-  const tagId = req.params.id;
+  const { id } = req.params;
+  const userId = req.user.id;
 
-  if (!ObjectId.isValid(tagId)) {
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
   
-  Note.updateMany({'tags': tagId}, {$pull: {'tags': tagId}})
+  Note.updateMany({'tags': id, userId}, {$pull: {'tags': id}})
     .then(() => {
-      return Tag.findByIdAndRemove(tagId);
+      return Tag.deleteOne({ _id: id, userId });
     })
     .then(() => {
       // Respond with a 204 status

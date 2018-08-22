@@ -25,14 +25,14 @@ router.get('/', (req, res, next) => {
 
 /* ========== GET/READ A SINGLE FOLDER ========== */
 router.get('/:id', (req, res, next) => {
-  if (!ObjectId.isValid(req.params.id)) {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
-
-  const { id } = req.params;
-  const userId = req.user.id;
   
   Folder.findOne({ _id: id, userId })
     .then(result => {
@@ -97,7 +97,7 @@ router.put('/:id', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  const updateObj = { name, userId };
+  const updateObj = { name };
 
   Folder.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true })
     .then(result => {

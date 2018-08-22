@@ -2,8 +2,9 @@
 
 const express = require('express');
 const passport = require('passport');
-const Note = require('../models/note');
 const ObjectId = require('mongoose').Types.ObjectId;
+
+const Note = require('../models/note');
 
 // Create a router instance (aka "mini-app")
 const router = express.Router();

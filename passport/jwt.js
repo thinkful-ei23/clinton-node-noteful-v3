@@ -1,7 +1,7 @@
 'use strict';
 
-const jwt = require('jsonwebtoken');
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
+
 const { JWT_SECRET } = require('../config');
 
 const options = {

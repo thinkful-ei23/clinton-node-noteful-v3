@@ -5,10 +5,10 @@ const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const passport = require('passport');
-const localStrategy = require('./passport/local');
-const jwtStrategy = require('./passport/jwt');
 
 const { PORT, MONGODB_URI } = require('./config');
+const localStrategy = require('./passport/local');
+const jwtStrategy = require('./passport/jwt');
 
 const notesRouter = require('./routes/notes');
 const foldersRouter = require('./routes/folders');
@@ -31,6 +31,7 @@ app.use(express.static('public'));
 // make them available on `req.body`
 app.use(express.json());
 
+// Set the strategies to use
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 

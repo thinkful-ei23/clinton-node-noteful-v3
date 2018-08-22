@@ -1,0 +1,14 @@
+[
+  {
+    "_id" : "000000000000000000000001",
+	  "fullname" : "Clint User",
+	  "username" : "clintuser",
+	  "password" : "$2a$10$gA6asCeLoHgj6U3C9SwvWeNxQN7xWeUdn5tDwpZR2T9g8tHlH5wQ."
+  },
+  {
+    "_id" : "000000000000000000000002",
+	  "fullname" : "Rachel User",
+	  "username" : "rachuser",
+	  "password" : "$2a$10$Mzx6sthlbgbKosyP/wY3j.vp6g5F3qh4OxjU9Wk4PXYesWZzlMrBK"
+  }
+]

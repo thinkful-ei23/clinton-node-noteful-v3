@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+
 const User = require('../models/user');
 
 const router = express.Router();
@@ -48,13 +49,8 @@ router.post('/', (req, res, next) => {
   }
 
   const sizedFields = {
-    username: {
-      min: 1
-    },
-    password: {
-      min: 8,
-      max: 72
-    }
+    username: { min: 1 },
+    password: { min: 8, max: 72 }
   };
   const tooSmallField = Object.keys(sizedFields).find(
     field =>

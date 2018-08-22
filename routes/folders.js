@@ -11,7 +11,7 @@ const router = express.Router();
 
 /* ========== GET/READ ALL FOLDERS ========== */
 router.get('/', (req, res, next) => {
-  Folder.find()
+  Folder.find({userId: req.user.id})
     .sort('name')
     .then(results => {
       if (results) {
@@ -30,8 +30,11 @@ router.get('/:id', (req, res, next) => {
     err.status = 400;
     return next(err); // => Error handler
   }
+
+  const { id } = req.params;
+  const userId = req.user.id;
   
-  Folder.findById(req.params.id)
+  Folder.findOne({ _id: id, userId })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -45,6 +48,7 @@ router.get('/:id', (req, res, next) => {
 /* ========== POST/CREATE A FOLDER ========== */
 router.post('/', (req, res, next) => {
   const { name } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!name) {
@@ -53,7 +57,7 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  const newFolder = { name };
+  const newFolder = { name, userId };
 
   Folder.create(newFolder)
     .then(result => {
@@ -76,11 +80,12 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE FOLDER ========== */
 router.put('/:id', (req, res, next) => {
-  const folderId = req.params.id;
+  const { id } = req.params;
   const { name } = req.body;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
-  if (!ObjectId.isValid(folderId)) {
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
@@ -92,9 +97,9 @@ router.put('/:id', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  const updateObj = { name };
+  const updateObj = { name, userId };
 
-  Folder.findByIdAndUpdate(folderId, {$set: updateObj}, { new: true })
+  Folder.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -113,17 +118,18 @@ router.put('/:id', (req, res, next) => {
 
 /* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
-  const folderId = req.params.id;
+  const { id } = req.params;
+  const userId = req.user.id;
 
-  if (!ObjectId.isValid(folderId)) {
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
   
-  Note.updateMany({'folderId': folderId}, {$unset: {'folderId': 1}})
+  Note.updateMany({'folderId': id, userId}, {$unset: {'folderId': 1}})
     .then(() => {
-      return Folder.findByIdAndRemove(folderId);
+      return Folder.deleteOne({ _id: id, userId });
     })
     .then(() => {
       // Respond with a 204 status

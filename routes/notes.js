@@ -162,7 +162,7 @@ router.put('/:id', (req, res, next) => {
     tags: (tags) ? tags : []
   };
 
-  Note.findByIdAndUpdate(id, {$set: updateObj}, { new: true })
+  Note.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client
@@ -175,13 +175,16 @@ router.put('/:id', (req, res, next) => {
 
 /* ========== DELETE/REMOVE A SINGLE NOTE ========== */
 router.delete('/:id', (req, res, next) => {
-  if (!ObjectId.isValid(req.params.id)) {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
 
-  Note.findByIdAndRemove(req.params.id)
+  Note.deleteOne({ _id: id, userId })
     .then(() => {
       // Respond with a 204 status
       res.sendStatus(204); // => Client

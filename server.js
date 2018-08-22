@@ -35,10 +35,13 @@ app.use(express.json());
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
-// Route all requests to `/api/notes` 
-// through the proper Router
+// Route all requests through the proper Routers
 app.use('/api', authRouter);
 app.use('/api/users', usersRouter);
+
+const jwtAuth = passport.authenticate('jwt', { session: false, failWithError: true });
+app.use('/api', jwtAuth);
+
 app.use('/api/notes', notesRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/tags', tagsRouter);

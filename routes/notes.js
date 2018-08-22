@@ -11,7 +11,7 @@ const router = express.Router();
 /* ========== GET/READ ALL NOTES + SEARCH BY QUERY ========== */
 router.get('/', (req, res, next) => {
   const { searchTerm, folderId, tagId } = req.query;
-  let filter = {};
+  const filter = { userId: req.user.id };
 
   if (searchTerm) {
     // V2:
@@ -49,13 +49,16 @@ router.get('/', (req, res, next) => {
 
 /* ========== GET/READ A SINGLE NOTE ========== */
 router.get('/:id', (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  
   if (!ObjectId.isValid(req.params.id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
   }
 
-  Note.findById(req.params.id)
+  Note.findOne({ _id: id, userId })
     .populate('tags', 'name')
     .then(result => {
       if (result) {
@@ -69,6 +72,7 @@ router.get('/:id', (req, res, next) => {
 
 /* ========== POST/CREATE A NOTE ========== */
 router.post('/', (req, res, next) => {
+  const userId = req.user.id;
   const { title, content, folderId, tags } = req.body;
 
   /***** Never trust users - validate input *****/
@@ -97,6 +101,7 @@ router.post('/', (req, res, next) => {
   const newNote = {
     title,
     content,
+    userId,
     folderId: (folderId) ? folderId : null,
     tags: (tags) ? tags : []
   };
@@ -116,11 +121,12 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE NOTE ========== */
 router.put('/:id', (req, res, next) => {
-  const noteId = req.params.id;
+  const { id } = req.params;
+  const userId = req.user.id;
   const { title, content, folderId, tags } = req.body;
 
   /***** Never trust users - validate input *****/
-  if (!ObjectId.isValid(noteId)) {
+  if (!ObjectId.isValid(id)) {
     const err = new Error('Invalid id');
     err.status = 400;
     return next(err); // => Error handler
@@ -151,11 +157,12 @@ router.put('/:id', (req, res, next) => {
   const updateObj = {
     title,
     content,
+    userId,
     folderId: (folderId) ? folderId : null,
     tags: (tags) ? tags : []
   };
 
-  Note.findByIdAndUpdate(noteId, {$set: updateObj}, { new: true })
+  Note.findByIdAndUpdate(id, {$set: updateObj}, { new: true })
     .then(result => {
       if (result) {
         res.json(result); // => Client

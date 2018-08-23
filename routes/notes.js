@@ -88,13 +88,17 @@ router.post('/', (req, res, next) => {
     title,
     content,
     userId,
-    folderId: null,
+    folderId,
     tags: []
   };
 
-  Folder.findOne({_id: folderId, userId})
+  if (newNote.folderId === '') {
+    delete newNote.folderId;
+  }
+
+  Folder.findOne({_id: newNote.folderId, userId})
     .then(result => {
-      if (folderId && (!result || !ObjectId.isValid(folderId))) {
+      if (newNote.folderId && (!result || !ObjectId.isValid(folderId))) {
         const err = new Error('`folderId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
@@ -166,13 +170,17 @@ router.put('/:id', (req, res, next) => {
   const updateObj = {
     title,
     content,
-    folderId: null,
+    folderId,
     tags: []
   };
 
-  Folder.findOne({_id: folderId, userId})
+  if (updateObj.folderId === '') {
+    delete updateObj.folderId;
+  }
+
+  Folder.findOne({_id: updateObj.folderId, userId})
     .then(result => {
-      if (folderId && (!result || !ObjectId.isValid(folderId))) {
+      if (updateObj.folderId && (!result || !ObjectId.isValid(folderId))) {
         const err = new Error('`folderId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler

@@ -9,9 +9,9 @@ const app = require('../server');
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
 
 const User = require('../models/user');
+const seedUsers = require('../db/seed/users');
 const Folder = require('../models/folder');
 const seedFolders = require('../db/seed/folders');
-const seedUsers = require('../db/seed/users');
 
 const expect = chai.expect;
 chai.use(chaiHttp);

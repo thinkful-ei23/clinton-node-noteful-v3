@@ -13,7 +13,7 @@ const expect = chai.expect;
 
 chai.use(chaiHttp);
 
-describe.only('Noteful API - Auth', function () {
+describe('Noteful API - Auth', function () {
   const username = 'exampleUser';
   const password = 'examplePass';
   const fullname = 'Example User';
@@ -129,7 +129,7 @@ describe.only('Noteful API - Auth', function () {
     });
 
     it('should reject requests with an expired token', function() {
-      const exp = Math.floor(Date.now() / 1000) - 10 // => 10 seconds ago
+      const exp = Math.floor(Date.now() / 1000) - 10; // => 10 seconds ago
       const user = { username, fullname };
       const expiredToken = jwt.sign({ user, exp }, JWT_SECRET, {
         subject: user.username

@@ -3,12 +3,15 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
 const app = require('../server');
-const { TEST_MONGODB_URI } = require('../config');
+const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
 
+const User = require('../models/user');
 const Folder = require('../models/folder');
 const seedFolders = require('../db/seed/folders');
+const seedUsers = require('../db/seed/users');
 
 const expect = chai.expect;
 chai.use(chaiHttp);
@@ -20,11 +23,19 @@ describe('Noteful /api/folders resource', function() {
       .then(() => mongoose.connection.db.dropDatabase());
   });
 
+  let token;
+  let user;
+
   beforeEach(function () {
     return Promise.all([
+      User.insertMany(seedUsers),
       Folder.insertMany(seedFolders),
       Folder.createIndexes()
-    ]);
+    ])
+      .then(([users]) => {
+        user = users[0];
+        token = jwt.sign({ user }, JWT_SECRET, { subject: user.username });
+      });
   });
 
   afterEach(function () {
@@ -41,15 +52,16 @@ describe('Noteful /api/folders resource', function() {
       let res;
       return chai.request(app)
         .get('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
         .then(function(_res) {
           res = _res;
           expect(res).to.have.status(200);
           expect(res).to.be.json;
           expect(res.body).to.have.lengthOf.at.least(1);
-          return Folder.countDocuments();
+          return Folder.find({ userId: user.id });
         })
-        .then(function(count) {
-          expect(res.body).to.have.lengthOf(count);
+        .then(function(folders) {
+          expect(res.body).to.have.lengthOf(folders.length);
         });
     });
 
@@ -57,6 +69,7 @@ describe('Noteful /api/folders resource', function() {
       let resFolder;
       return chai.request(app)
         .get('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
         .then(function(res) {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
@@ -75,6 +88,7 @@ describe('Noteful /api/folders resource', function() {
           expect(resFolder.name).to.equal(folder.name);
           expect(new Date(resFolder.createdAt)).to.eql(folder.createdAt);
           expect(new Date(resFolder.updatedAt)).to.eql(folder.updatedAt);
+          expect(resFolder.userId).to.equal(folder.userId + '');
         });
     });
 
@@ -84,28 +98,32 @@ describe('Noteful /api/folders resource', function() {
 
     it('should return the correct folder', function() {
       let resFolder;
-      return Folder.findOne()
+      return Folder.findOne({ userId: user.id })
         .then(function(res) {
           resFolder = res;
-          return chai.request(app).get(`/api/folders/${resFolder.id}`);
+          return chai.request(app)
+            .get(`/api/folders/${resFolder.id}`)
+            .set('Authorization', `Bearer ${token}`);
         })
         .then(function(res) {
           expect(res).to.have.status(200);
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt', 'userId');
 
           expect(res.body.id).to.equal(resFolder.id);
           expect(res.body.name).to.equal(resFolder.name);
           expect(new Date(res.body.createdAt)).to.eql(resFolder.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(resFolder.updatedAt);
+          expect(res.body.userId).to.equal(resFolder.userId + '');
         });
     });
 
     it('should return a 400 error when given an invalid id', function() {
       return chai.request(app)
         .get('/api/folders/NOTANID')
+        .set('Authorization', `Bearer ${token}`)
         .then(function(res) {
           expect(res).to.have.status(400);
           expect(res).to.be.json;
@@ -118,6 +136,7 @@ describe('Noteful /api/folders resource', function() {
     it('should return a 404 error when given a nonexistent id', function() {
       return chai.request(app)
         .get('/api/folders/000000000000000000000099')
+        .set('Authorization', `Bearer ${token}`)
         .then(function(res) {
           expect(res).to.have.status(404);
           expect(res).to.be.json;
@@ -139,6 +158,7 @@ describe('Noteful /api/folders resource', function() {
       let res;
       return chai.request(app)
         .post('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
         .send(newFolder)
         .then(function(_res) {
           res = _res;
@@ -147,7 +167,7 @@ describe('Noteful /api/folders resource', function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt', 'userId');
 
           return Folder.findById(res.body.id);
         })
@@ -156,6 +176,7 @@ describe('Noteful /api/folders resource', function() {
           expect(res.body.name).to.equal(data.name);
           expect(new Date(res.body.createdAt)).to.eql(data.createdAt);
           expect(new Date(res.body.updatedAt)).to.eql(data.updatedAt);
+          expect(res.body.userId).to.equal(data.userId + '');
         });
     });
 
@@ -164,6 +185,7 @@ describe('Noteful /api/folders resource', function() {
 
       return chai.request(app)
         .post('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
         .send(newFolder)
         .then(function(res) {
           expect(res).to.have.status(400);
@@ -175,10 +197,13 @@ describe('Noteful /api/folders resource', function() {
     });
 
     it('should return a 400 error when given a duplicate name', function () {
-      return Folder.findOne()
+      return Folder.findOne({ userId: user.id })
         .then(data => {
           const newItem = { 'name': data.name };
-          return chai.request(app).post('/api/folders').send(newItem);
+          return chai.request(app)
+            .post('/api/folders')
+            .set('Authorization', `Bearer ${token}`)
+            .send(newItem);
         })
         .then(res => {
           expect(res).to.have.status(400);
@@ -196,12 +221,13 @@ describe('Noteful /api/folders resource', function() {
       const updateData = { name: 'Updated Name' };
 
       return Folder
-        .findOne()
+        .findOne({ userId: user.id })
         .then(function(folder) {
           updateData.id = folder.id;
 
           return chai.request(app)
             .put(`/api/folders/${folder.id}`)
+            .set('Authorization', `Bearer ${token}`)
             .send(updateData);
         })
         .then(function(res) {
@@ -209,7 +235,7 @@ describe('Noteful /api/folders resource', function() {
           expect(res).to.be.json;
 
           expect(res.body).to.be.an('object');
-          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt');
+          expect(res.body).to.have.keys('id', 'name', 'createdAt', 'updatedAt', 'userId');
 
           return Folder.findById(updateData.id);
         })
@@ -223,11 +249,12 @@ describe('Noteful /api/folders resource', function() {
       const updateData = { name: '' };
 
       return Folder
-        .findOne()
+        .findOne({ userId: user.id })
         .then(function(folder) {
           updateData.id = folder.id;
           return chai.request(app)
             .put(`/api/folders/${folder.id}`)
+            .set('Authorization', `Bearer ${token}`)
             .send(updateData);
         })
         .then(function(res) {
@@ -240,12 +267,13 @@ describe('Noteful /api/folders resource', function() {
     });
 
     it('should return a 400 error when given a duplicate name', function () {
-      return Folder.find().limit(2)
+      return Folder.find({ userId: user.id }).limit(2)
         .then(results => {
           const [item1, item2] = results;
           item1.name = item2.name;
           return chai.request(app)
             .put(`/api/folders/${item1.id}`)
+            .set('Authorization', `Bearer ${token}`)
             .send(item1);
         })
         .then(res => {
@@ -261,6 +289,7 @@ describe('Noteful /api/folders resource', function() {
 
       return chai.request(app)
         .put('/api/folders/NOTANID')
+        .set('Authorization', `Bearer ${token}`)
         .send(updateData)
         .then(function(res) {
           expect(res).to.have.status(400);
@@ -276,6 +305,7 @@ describe('Noteful /api/folders resource', function() {
       
       return chai.request(app)
         .put('/api/folders/111111111111111111111199')
+        .set('Authorization', `Bearer ${token}`)
         .send(updateData)
         .then(function(res) {
           expect(res).to.have.status(404);
@@ -294,10 +324,12 @@ describe('Noteful /api/folders resource', function() {
       let folder;
 
       return Folder
-        .findOne()
+        .findOne({ userId: user.id })
         .then(function(_folder) {
           folder = _folder;
-          return chai.request(app).delete(`/api/folders/${folder.id}`);
+          return chai.request(app)
+            .delete(`/api/folders/${folder.id}`)
+            .set('Authorization', `Bearer ${token}`);
         })
         .then(function(res) {
           expect(res).to.have.status(204);
@@ -311,6 +343,7 @@ describe('Noteful /api/folders resource', function() {
     it('should return a 400 error when given an invalid id', function() {
       return chai.request(app)
         .delete('/api/folders/NOTANID')
+        .set('Authorization', `Bearer ${token}`)
         .then(function(res) {
           expect(res).to.have.status(400);
           expect(res).to.be.json;

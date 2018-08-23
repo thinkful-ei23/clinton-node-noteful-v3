@@ -87,46 +87,46 @@ router.post('/', (req, res, next) => {
   const newNote = {
     title,
     content,
-    userId,
     folderId,
-    tags: []
+    tags,
+    userId
   };
 
   if (newNote.folderId === '') {
     delete newNote.folderId;
   }
 
+  if (newNote.folderId && !ObjectId.isValid(newNote.folderId)) {
+    delete newNote.folderId;
+    const err = new Error('`folderId` is not valid');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  if (newNote.tags.length > 0) {
+    newNote.tags.forEach(tag => {
+      if (!ObjectId.isValid(tag)) {
+        const err = new Error('`tagId` is not valid');
+        err.status = 400;
+        return next(err); // => Error handler
+      }
+    });
+  }
+
   Folder.findOne({_id: newNote.folderId, userId})
     .then(result => {
-      if (newNote.folderId && (!result || !ObjectId.isValid(folderId))) {
+      if (newNote.folderId && !result) {
         const err = new Error('`folderId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
       }
-      if (result) {
-        newNote.folderId = result.id;
-      }
       return Tag.find({userId, _id: {$in: tags}});
     })
     .then(result => {
-      if (result) {
-        result.forEach(tag => {
-          if (!ObjectId.isValid(tag.id)) {
-            const err = new Error('`tagId` is not valid');
-            err.status = 400;
-            return Promise.reject(err); // => Error handler
-          }
-        });
-      }
-      if (tags && result.length !== tags.length) {
+      if (result.length !== tags.length) {
         const err = new Error('`tagId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
-      }
-      if (result) {
-        result.forEach(tag => {
-          newNote.tags.push(tag.id);
-        });
       }
       return Note.create(newNote);
     })
@@ -171,44 +171,44 @@ router.put('/:id', (req, res, next) => {
     title,
     content,
     folderId,
-    tags: []
+    tags
   };
 
   if (updateObj.folderId === '') {
     delete updateObj.folderId;
   }
 
+  if (updateObj.folderId && !ObjectId.isValid(updateObj.folderId)) {
+    delete updateObj.folderId;
+    const err = new Error('`folderId` is not valid');
+    err.status = 400;
+    return next(err); // => Error handler
+  }
+
+  if (updateObj.tags.length > 0) {
+    updateObj.tags.forEach(tag => {
+      if (!ObjectId.isValid(tag)) {
+        const err = new Error('`tagId` is not valid');
+        err.status = 400;
+        return next(err); // => Error handler
+      }
+    });
+  }
+
   Folder.findOne({_id: updateObj.folderId, userId})
     .then(result => {
-      if (updateObj.folderId && (!result || !ObjectId.isValid(folderId))) {
+      if (updateObj.folderId && !result) {
         const err = new Error('`folderId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
       }
-      if (result) {
-        updateObj.folderId = result.id;
-      }
       return Tag.find({userId, _id: {$in: tags}});
     })
     .then(result => {
-      if (result) {
-        result.forEach(tag => {
-          if (!ObjectId.isValid(tag.id)) {
-            const err = new Error('`tagId` is not valid');
-            err.status = 400;
-            return Promise.reject(err); // => Error handler
-          }
-        });
-      }
       if (tags && result.length !== tags.length) {
         const err = new Error('`tagId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
-      }
-      if (result) {
-        result.forEach(tag => {
-          updateObj.tags.push(tag.id);
-        });
       }
       return Note.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true });
     })

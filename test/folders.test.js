@@ -98,6 +98,7 @@ describe('Noteful /api/folders resource', function() {
 
     it('should return a 500 error', function() {
       sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
+      
       return chai.request(app)
         .get('/api/folders')
         .set('Authorization', `Bearer ${token}`)

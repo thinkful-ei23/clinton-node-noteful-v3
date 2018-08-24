@@ -4,11 +4,13 @@ const app = require('../server');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
+const sinon = require('sinon');
 
 const { TEST_MONGODB_URI } = require('../config');
 
 const User = require('../models/user');
 
+const sandbox = sinon.createSandbox();
 const expect = chai.expect;
 
 chai.use(chaiHttp);
@@ -30,6 +32,7 @@ describe('Noteful API - Users', function () {
   });
 
   afterEach(function () {
+    sandbox.restore();
     return mongoose.connection.db.dropDatabase();
   });
 
@@ -263,6 +266,23 @@ describe('Noteful API - Users', function () {
           })
           .then(isValid => {
             expect(isValid).to.be.true;
+          });
+      });
+
+      it('should return a 500 error', function() {
+        sandbox.stub(User.schema.options.toObject, 'transform').throws('FakeError');
+
+        const testUser = { username, password, fullname };
+
+        return chai
+          .request(app)
+          .post('/api/users')
+          .send(testUser)
+          .then(res => {
+            expect(res).to.have.status(500);
+            expect(res).to.be.json;
+            expect(res.body).to.be.an('object');
+            expect(res.body.message).to.equal('Internal Server Error');
           });
       });
 

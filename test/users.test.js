@@ -71,6 +71,37 @@ describe('Noteful API - Users', function () {
           });
       });
 
+      it('Should create a new user with an empty fullname', function () {
+        const testUser = { username, password };
+
+        let res;
+        return chai
+          .request(app)
+          .post('/api/users')
+          .send(testUser)
+          .then(_res => {
+            res = _res;
+            expect(res).to.have.status(201);
+            expect(res.body).to.be.an('object');
+            expect(res.body).to.have.keys('id', 'username', 'fullname');
+
+            expect(res.body.id).to.exist;
+            expect(res.body.username).to.equal(testUser.username);
+            expect(res.body.fullname).to.equal('');
+
+            return User.findOne({ username });
+          })
+          .then(user => {
+            expect(user).to.exist;
+            expect(user.id).to.equal(res.body.id);
+            expect(user.fullname).to.equal('');
+            return user.validatePassword(password);
+          })
+          .then(isValid => {
+            expect(isValid).to.be.true;
+          });
+      });
+
       it('Should reject users with missing username', function () {
         const testUser = { password, fullname };
         return chai.request(app).post('/api/users').send(testUser)

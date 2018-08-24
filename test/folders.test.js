@@ -5,6 +5,7 @@ const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const sinon = require('sinon');
+const express = require('express');
 
 const app = require('../server');
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
@@ -96,7 +97,6 @@ describe('Noteful /api/folders resource', function() {
     });
 
     it('should return a 500 error', function() {
-      // sandbox.stub(Folder, 'find').throws('FakeError');
       sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
       return chai.request(app)
         .get('/api/folders')
@@ -160,6 +160,24 @@ describe('Noteful /api/folders resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
+      let resFolder;
+      return Folder.findOne({ userId: user.id })
+        .then(function(res) {
+          resFolder = res;
+          return chai.request(app)
+            .get(`/api/folders/${resFolder.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -227,6 +245,24 @@ describe('Noteful /api/folders resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body.message).to.equal('The folder name already exists');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
+      const newFolder = {
+        'name': 'Stuff'
+      };
+
+      return chai.request(app)
+        .post('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newFolder)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -333,6 +369,28 @@ describe('Noteful /api/folders resource', function() {
         });
     });
 
+    it('should return a 500 error', function() {
+      sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
+      const updateData = { name: 'Updated Name' };
+
+      return Folder
+        .findOne({ userId: user.id })
+        .then(function(folder) {
+          updateData.id = folder.id;
+
+          return chai.request(app)
+            .put(`/api/folders/${folder.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(updateData);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
+        });
+    });
+
   });
 
   describe('DELETE /api/folders/:id', function() {
@@ -367,6 +425,26 @@ describe('Noteful /api/folders resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(express.response, 'sendStatus').throws('FakeError');
+      let folder;
+
+      return Folder
+        .findOne({ userId: user.id })
+        .then(function(_folder) {
+          folder = _folder;
+          return chai.request(app)
+            .delete(`/api/folders/${folder.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 

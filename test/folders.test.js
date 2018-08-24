@@ -4,6 +4,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const sinon = require('sinon');
 
 const app = require('../server');
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
@@ -13,6 +14,7 @@ const seedUsers = require('../db/seed/users');
 const Folder = require('../models/folder');
 const seedFolders = require('../db/seed/folders');
 
+const sandbox = sinon.createSandbox();
 const expect = chai.expect;
 chai.use(chaiHttp);
 
@@ -39,6 +41,7 @@ describe('Noteful /api/folders resource', function() {
   });
 
   afterEach(function () {
+    sandbox.restore();
     return mongoose.connection.db.dropDatabase();
   });
 
@@ -89,6 +92,20 @@ describe('Noteful /api/folders resource', function() {
           expect(new Date(resFolder.createdAt)).to.eql(folder.createdAt);
           expect(new Date(resFolder.updatedAt)).to.eql(folder.updatedAt);
           expect(resFolder.userId).to.equal(folder.userId + '');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      // sandbox.stub(Folder, 'find').throws('FakeError');
+      sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
+      return chai.request(app)
+        .get('/api/folders')
+        .set('Authorization', `Bearer ${token}`)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 

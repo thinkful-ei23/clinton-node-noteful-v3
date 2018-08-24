@@ -103,7 +103,7 @@ router.post('/', (req, res, next) => {
     return next(err); // => Error handler
   }
 
-  if (newNote.tags.length > 0) {
+  if (newNote.tags && newNote.tags.length > 0) {
     newNote.tags.forEach(tag => {
       if (!ObjectId.isValid(tag)) {
         const err = new Error('`tagId` is not valid');
@@ -123,7 +123,7 @@ router.post('/', (req, res, next) => {
       return Tag.find({userId, _id: {$in: tags}});
     })
     .then(result => {
-      if (result.length !== tags.length) {
+      if (tags && result.length !== tags.length) {
         const err = new Error('`tagId` is not valid');
         err.status = 400;
         return Promise.reject(err); // => Error handler
@@ -176,16 +176,16 @@ router.put('/:id', (req, res, next) => {
 
   if (updateObj.folderId === '') {
     delete updateObj.folderId;
+    updateObj.$unset = { folderId: 1 };
   }
 
-  if (updateObj.folderId && !ObjectId.isValid(updateObj.folderId)) {
-    delete updateObj.folderId;
+  if (updateObj.folderId && !ObjectId.isValid(folderId)) {
     const err = new Error('`folderId` is not valid');
     err.status = 400;
     return next(err); // => Error handler
   }
 
-  if (updateObj.tags.length > 0) {
+  if (updateObj.tags && updateObj.tags.length > 0) {
     updateObj.tags.forEach(tag => {
       if (!ObjectId.isValid(tag)) {
         const err = new Error('`tagId` is not valid');
@@ -210,7 +210,7 @@ router.put('/:id', (req, res, next) => {
         err.status = 400;
         return Promise.reject(err); // => Error handler
       }
-      return Note.findOneAndUpdate({ _id: id, userId }, {$set: updateObj}, { new: true });
+      return Note.findByIdAndUpdate(id, updateObj, { new: true });
     })
     .then(result => {
       if (result) {

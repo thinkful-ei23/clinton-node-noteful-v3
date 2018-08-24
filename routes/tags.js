@@ -13,13 +13,7 @@ const router = express.Router();
 router.get('/', (req, res, next) => {
   Tag.find({userId: req.user.id})
     .sort('name')
-    .then(results => {
-      if (results) {
-        res.json(results); // => Client
-      } else {
-        next(); // => 404 handler
-      }
-    })
+    .then(results => res.json(results)) // => Client
     .catch(err => next(err)); // => Error handler
 });
 
@@ -61,13 +55,9 @@ router.post('/', (req, res, next) => {
 
   Tag.create(newTag)
     .then(result => {
-      if (result) {
-        res.location(`http://${req.originalUrl}/${result.id}`)
-          .status(201)
-          .json(result); // => Client
-      } else {
-        next(); // => 404 handler
-      }
+      res.location(`http://${req.originalUrl}/${result.id}`)
+        .status(201)
+        .json(result); // => Client
     })
     .catch(err => {
       if (err.code === 11000) {

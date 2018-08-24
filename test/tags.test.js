@@ -4,6 +4,8 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const sinon = require('sinon');
+const express = require('express');
 
 const app = require('../server');
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
@@ -13,6 +15,7 @@ const seedUsers = require('../db/seed/users');
 const Tag = require('../models/tag');
 const seedTags = require('../db/seed/tags');
 
+const sandbox = sinon.createSandbox();
 const expect = chai.expect;
 chai.use(chaiHttp);
 
@@ -39,6 +42,7 @@ describe('Noteful /api/tags resource', function() {
   });
 
   afterEach(function () {
+    sandbox.restore();
     return mongoose.connection.db.dropDatabase();
   });
 
@@ -92,6 +96,20 @@ describe('Noteful /api/tags resource', function() {
         });
     });
 
+    it('should return a 500 error', function() {
+      sandbox.stub(Tag.schema.options.toObject, 'transform').throws('FakeError');
+
+      return chai.request(app)
+        .get('/api/tags')
+        .set('Authorization', `Bearer ${token}`)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
+        });
+    });
+
   });
 
   describe('GET /api/tags/:id', function() {
@@ -141,6 +159,23 @@ describe('Noteful /api/tags resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Tag.schema.options.toObject, 'transform').throws('FakeError');
+
+      return Tag.findOne()
+        .then(function(res) {
+          return chai.request(app)
+            .get(`/api/tags/${res.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -208,6 +243,24 @@ describe('Noteful /api/tags resource', function() {
           expect(res).to.be.json;
           expect(res.body).to.be.an('object');
           expect(res.body.message).to.equal('The tag name already exists');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Tag.schema.options.toObject, 'transform').throws('FakeError');
+      const newTag = {
+        'name': 'Stuff'
+      };
+
+      return chai.request(app)
+        .post('/api/tags')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newTag)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -314,6 +367,28 @@ describe('Noteful /api/tags resource', function() {
         });
     });
 
+    it('should return a 500 error', function() {
+      sandbox.stub(Tag.schema.options.toObject, 'transform').throws('FakeError');
+      const updateData = { name: 'Updates' };
+
+      return Tag
+        .findOne({ userId: user.id })
+        .then(function(tag) {
+          updateData.id = tag.id;
+
+          return chai.request(app)
+            .put(`/api/tags/${tag.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(updateData);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
+        });
+    });
+
   });
 
   describe('DELETE /api/tags/:id', function() {
@@ -348,6 +423,24 @@ describe('Noteful /api/tags resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(express.response, 'sendStatus').throws('FakeError');
+
+      return Tag
+        .findOne({ userId: user.id })
+        .then(function(tag) {
+          return chai.request(app)
+            .delete(`/api/tags/${tag.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 

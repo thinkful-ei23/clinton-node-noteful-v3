@@ -39,13 +39,7 @@ router.get('/', (req, res, next) => {
   Note.find(filter)
     .populate('tags', 'name')
     .sort({ updatedAt: 'desc' })
-    .then(results => {
-      if (results) {
-        res.json(results); // => Client
-      } else {
-        next(); // => 404 handler
-      }
-    })
+    .then(results => res.json(results)) // => Client
     .catch(err => next(err)); // => Error handler
 });
 
@@ -131,13 +125,9 @@ router.post('/', (req, res, next) => {
       return Note.create(newNote);
     })
     .then(result => {
-      if (result) {
-        res.location(`http://${req.originalUrl}/${result.id}`)
-          .status(201)
-          .json(result); // => Client
-      } else {
-        next(); // => 404 handler
-      }
+      res.location(`http://${req.originalUrl}/${result.id}`)
+        .status(201)
+        .json(result); // => Client
     })
     .catch(err => next(err)); // => Error handler
 });

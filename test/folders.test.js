@@ -165,12 +165,10 @@ describe('Noteful /api/folders resource', function() {
 
     it('should return a 500 error', function() {
       sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
-      let resFolder;
       return Folder.findOne({ userId: user.id })
         .then(function(res) {
-          resFolder = res;
           return chai.request(app)
-            .get(`/api/folders/${resFolder.id}`)
+            .get(`/api/folders/${res.id}`)
             .set('Authorization', `Bearer ${token}`);
         })
         .then(res => {
@@ -250,9 +248,7 @@ describe('Noteful /api/folders resource', function() {
 
     it('should return a 500 error', function() {
       sandbox.stub(Folder.schema.options.toObject, 'transform').throws('FakeError');
-      const newFolder = {
-        'name': 'Stuff'
-      };
+      const newFolder = { 'name': 'Stuff' };
 
       return chai.request(app)
         .post('/api/folders')
@@ -430,12 +426,10 @@ describe('Noteful /api/folders resource', function() {
 
     it('should return a 500 error', function() {
       sandbox.stub(express.response, 'sendStatus').throws('FakeError');
-      let folder;
 
       return Folder
         .findOne({ userId: user.id })
-        .then(function(_folder) {
-          folder = _folder;
+        .then(function(folder) {
           return chai.request(app)
             .delete(`/api/folders/${folder.id}`)
             .set('Authorization', `Bearer ${token}`);

@@ -4,6 +4,8 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const sinon = require('sinon');
+const express = require('express');
 
 const app = require('../server');
 const { TEST_MONGODB_URI, JWT_SECRET } = require('../config');
@@ -18,6 +20,7 @@ const seedNotes = require('../db/seed/notes');
 const seedFolders = require('../db/seed/folders');
 const seedTags = require('../db/seed/tags');
 
+const sandbox = sinon.createSandbox();
 const expect = chai.expect;
 chai.use(chaiHttp);
 
@@ -47,6 +50,7 @@ describe('Noteful /api/notes resource', function() {
   });
 
   afterEach(function () {
+    sandbox.restore();
     return mongoose.connection.db.dropDatabase();
   });
 
@@ -274,6 +278,19 @@ describe('Noteful /api/notes resource', function() {
         });
     });
 
+    it('should return a 500 error', function() {
+      sandbox.stub(Note.schema.options.toObject, 'transform').throws('FakeError');
+      return chai.request(app)
+        .get('/api/notes')
+        .set('Authorization', `Bearer ${token}`)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
+        });
+    });
+
   });
 
   describe('GET /api/notes/:id', function() {
@@ -333,6 +350,23 @@ describe('Noteful /api/notes resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Not Found');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Note.schema.options.toObject, 'transform').throws('FakeError');
+      return Note.findOne({ userId: user.id })
+        .populate('tags', 'name')
+        .then(function(res) {
+          return chai.request(app)
+            .get(`/api/notes/${res.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -527,6 +561,27 @@ describe('Noteful /api/notes resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('`tagId` is not valid');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(Note.schema.options.toObject, 'transform').throws('FakeError');
+      const newItem = {
+        'title': 'The best article about dogs ever!',
+        'content': 'Lorem ipsum dolor...',
+        'folderId': '222222222222222222222202',
+        'tags': ['333333333333333333333301', '333333333333333333333303']
+      };
+
+      return chai.request(app)
+        .post('/api/notes')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newItem)
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
@@ -885,6 +940,32 @@ describe('Noteful /api/notes resource', function() {
         });
     });
 
+    it('should return a 500 error', function() {
+      sandbox.stub(Note.schema.options.toObject, 'transform').throws('FakeError');
+      const updateData = {
+        'title': 'Updated Title',
+        'content': 'Updated content lorem ipsum...',
+        'folderId': '222222222222222222222202',
+        'tags': ['333333333333333333333301', '333333333333333333333304']
+      };
+
+      return Note
+        .findOne({ userId: user.id })
+        .then(function(note) {
+          updateData.id = note.id;
+          return chai.request(app)
+            .put(`/api/notes/${note.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(updateData);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
+        });
+    });
+
   });
 
   describe('DELETE /api/notes/:id', function() {
@@ -919,6 +1000,23 @@ describe('Noteful /api/notes resource', function() {
           expect(res.body).to.be.an('object');
           expect(res.body).to.include.keys('message', 'status');
           expect(res.body.message).to.equal('Invalid id');
+        });
+    });
+
+    it('should return a 500 error', function() {
+      sandbox.stub(express.response, 'sendStatus').throws('FakeError');
+      return Note
+        .findOne({ userId: user.id })
+        .then(function(note) {
+          return chai.request(app)
+            .delete(`/api/notes/${note.id}`)
+            .set('Authorization', `Bearer ${token}`);
+        })
+        .then(res => {
+          expect(res).to.have.status(500);
+          expect(res).to.be.json;
+          expect(res.body).to.be.an('object');
+          expect(res.body.message).to.equal('Internal Server Error');
         });
     });
 
